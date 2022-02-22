@@ -2,6 +2,15 @@
 
 use ExtUtils::MakeMaker;
 
+
+sub MY::postamble {
+    return <<'ECHO_VERSION';
+injectversion ::
+	$(NOECHO) sed -i "s#@VERSION@#$(VERSION)#" $(INST_SCRIPT)/*.pl
+
+ECHO_VERSION
+}
+
 WriteMakefile(
     # version du package complet
     NAME => "ROK4GENERATION",

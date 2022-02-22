@@ -55,8 +55,12 @@ De même, un fichier .prog à côté du script peut être mis à jour avec le po
 
 ## Installation
 
-`PERL5LIB=/usr/local/lib/perl5/ perl Makefile.PL INSTALL_BASE=/usr/local VERSION=0.0.1`
-
+```shell
+perl Makefile.PL INSTALL_BASE=/usr/local VERSION=0.0.1
+make
+make injectversion
+make install
+```
 
 ## Présentation des outils
 
