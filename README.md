@@ -11,8 +11,9 @@ Il est possible que les scripts BASH sachent faire de la reprise sur erreur. Dan
 De même, un fichier .prog à côté du script peut être mis à jour avec le pourcentage de progression (calculé à partir des lignes du script).
 
 - [Récupération du projet](#récupération-du-projet)
-- [Dépendances](#dépendances)
+- [Dépendances à la compilation](#dépendances-à-la-compilation)
 - [Installation](#installation)
+- [Dépendances à l'exécution](#dépendances-à-lexécution)
 - [Présentation des outils](#présentation-des-outils)
   - [BE4](#be4)
   - [JOINCACHE](#joincache)
@@ -22,12 +23,12 @@ De même, un fichier .prog à côté du script peut être mis à jour avec le po
 
 ## Récupération du projet
 
-``
+`git clone --recursive https://github.com/rok4/pregeneration`
 
-## Dépendances
+## Dépendances à la compilation
 
 * Submodule GIT
-    * `rok4/core-perl`
+    * `https://github.com/rok4/core-perl`
 * Paquets debian
     * perl-base
     * libgdal-perl
@@ -61,6 +62,12 @@ make
 make injectversion
 make install
 ```
+
+## Dépendances à l'exécution
+
+* Dépôt GIT
+    * `https://github.com/rok4/tilematrixsets`
+    * `https://github.com/rok4/styles`
 
 ## Présentation des outils
 
