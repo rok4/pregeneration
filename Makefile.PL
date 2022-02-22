@@ -11,11 +11,7 @@ WriteMakefile(
         'bin/4alamo.pl',
         'bin/4head.pl',
         'bin/joincache.pl',
-        'bin/create-layer.pl',
-        'bin/pyr2pyr.pl',
-        'bin/pyrolyse.pl',
-        'bin/sup-pyr.pl',
-        'bin/tms-toolbox.pl'
+        'bin/pyr2pyr.pl'
     ],
     BUILD_REQUIRES => { 
         "ExtUtils::MakeMaker" => 0
@@ -31,7 +27,6 @@ WriteMakefile(
         "File::Spec" => 0,
         "FindBin" => 0,
         "Getopt::Long" => 0,
-        "JSON" => 0,
         "List::Util" => 0,
         "Log::Log4perl" => 0,
         "Math::BigFloat" => 0,
@@ -52,8 +47,6 @@ WriteMakefile(
         "ROK4::Core::Script" => 0,
         "ROK4::Core::Shell" => 0,
         "ROK4::Core::TileMatrix" => 0,
-        "ROK4::Core::TileMatrixSet" => 0,
-        "Term::ProgressBar" => 0,
-        "Time::HiRes" => 0
+        "ROK4::Core::TileMatrixSet" => 0
     }
 );

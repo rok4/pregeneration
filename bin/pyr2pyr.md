@@ -1,7 +1,5 @@
 # PYR2PYR
 
-[Vue générale](../../README.md#transfert-de-pyramide)
-
 - [Usage](#usage)
   - [Commandes](#commandes)
   - [Options](#options)

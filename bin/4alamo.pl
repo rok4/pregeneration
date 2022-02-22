@@ -92,7 +92,7 @@ $|=1;
 ####################################################################################################
 
 # Variable: version
-my $VERSION = '@ROK4_VERSION@';
+my $VERSION = '@VERSION@';
 
 =begin nd
 Variable: options

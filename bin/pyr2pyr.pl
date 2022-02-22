@@ -78,7 +78,7 @@ use constant FALSE => 0;
 
 ################################################################################
 # Version
-my $VERSION = '@ROK4_VERSION@';
+my $VERSION = '@VERSION@';
 
 
 my %options =

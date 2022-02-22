@@ -1,7 +1,5 @@
 # BE4
 
-[Vue générale](../../README.md#la-suite-be4)
-
 - [Usage](#usage)
   - [Commandes](#commandes)
   - [Options](#options)

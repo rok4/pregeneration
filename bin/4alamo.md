@@ -1,7 +1,5 @@
 # 4ALAMO
 
-[Vue générale](../../README.md#la-suite-4alamo)
-
 - [Usage](#usage)
   - [Commandes](#commandes)
   - [Options](#options)

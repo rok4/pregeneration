@@ -1,7 +1,5 @@
 # JOINCACHE
 
-[Vue générale](../../README.md#la-suite-joincache)
-
 - [Usage](#usage)
   - [Commandes](#commandes)
   - [Options](#options)
