@@ -10,6 +10,7 @@ Il est possible que les scripts BASH sachent faire de la reprise sur erreur. Dan
 
 De même, un fichier .prog à côté du script peut être mis à jour avec le pourcentage de progression (calculé à partir des lignes du script).
 
+- [Récupération du projet](#récupération-du-projet)
 - [Dépendances](#dépendances)
 - [Installation](#installation)
 - [Présentation des outils](#présentation-des-outils)
@@ -19,14 +20,38 @@ De même, un fichier .prog à côté du script peut être mis à jour avec le po
   - [4HEAD](#4head)
   - [PYR2PYR](#pyr2pyr)
 
+## Récupération du projet
+
+``
+
 ## Dépendances
 
-* Les librairies ROK4::Core Perl
+* Submodule GIT
+    * `rok4/core-perl`
 * Paquets debian
     * perl-base
+    * libgdal-perl
+    * libpq-dev
+    * gdal-bin
+    * libfile-find-rule-perl
+    * libfile-copy-link-perl
+    * libconfig-ini-perl
+    * libdbi-perl
+    * libdbd-pg-perl
+    * libdevel-size-perl
+    * libdigest-sha-perl
+    * libfile-map-perl
     * libfindbin-libs-perl
+    * libhttp-message-perl
+    * liblwp-protocol-https-perl
     * libmath-bigint-perl
+    * libterm-progressbar-perl
     * liblog-log4perl-perl
+    * libjson-parse-perl
+    * libjson-perl
+    * libtest-simple-perl
+    * libxml-libxml-perl
+    * libamazon-s3-perl
 
 ## Installation
 
