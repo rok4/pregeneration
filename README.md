@@ -14,6 +14,7 @@ De même, un fichier .prog à côté du script peut être mis à jour avec le po
 - [Dépendances à la compilation](#dépendances-à-la-compilation)
 - [Installation](#installation)
 - [Dépendances à l'exécution](#dépendances-à-lexécution)
+- [Variables d'environnement utilisées dans les librairies ROK4::Core](#variables-denvironnement-utilisées-dans-les-librairies-rok4core)
 - [Présentation des outils](#présentation-des-outils)
   - [BE4](#be4)
   - [JOINCACHE](#joincache)
@@ -68,6 +69,36 @@ make install
 * Dépôt GIT
     * `https://github.com/rok4/tilematrixsets`
     * `https://github.com/rok4/styles`
+
+
+## Variables d'environnement utilisées dans les librairies ROK4::Core
+
+Leur définition est contrôlée à l'usage.
+
+* `ROK4_TMS_DIRECTORY` pour y chercher les Tile Matrix Sets
+* Pour le stockage CEPH
+    - `ROK4_CEPH_CONFFILE`
+    - `ROK4_CEPH_USERNAME`
+    - `ROK4_CEPH_CLUSTERNAME`
+* Pour le stockage S3
+    - `ROK4_S3_URL`
+    - `ROK4_S3_KEY`
+    - `ROK4_S3_SECRETKEY`
+* Pour le stockage SWIFT
+    - `ROK4_SWIFT_AUTHURL`
+    - `ROK4_SWIFT_USER`
+    - `ROK4_SWIFT_PASSWD`
+    - `ROK4_SWIFT_PUBLICURL`
+    - Si authentification via Swift
+        - `ROK4_SWIFT_ACCOUNT`
+    - Si connection via keystone (présence de `ROK4_KEYSTONE_DOMAINID`)
+        - `ROK4_KEYSTONE_DOMAINID`
+        - `ROK4_KEYSTONE_PROJECTID`
+* Pour configurer l'agent de requête (intéraction SWIFT et S3)
+    - `ROK4_SSL_NO_VERIFY`
+    - `HTTP_PROXY`
+    - `HTTPS_PROXY`
+    - `NO_PROXY`
 
 ## Présentation des outils
 
