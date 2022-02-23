@@ -56,7 +56,7 @@ Attributes:
     row - integer - Row
     level - string - Level's identifiant
     pyramid - <ROK4::Core::PyramidRaster> - Pyramid which node belong to
-    script - <ROK4::Core::Script> - Script in which the node will be generated
+    script - <ROK4::PREGENERATION::Script> - Script in which the node will be generated
     sources - hash array - Source images from which this node is generated. One image source :
 |               img - string - Absolute path to the image
 |               msk - string - Absolute path to the associated mask (optionnal)
@@ -223,8 +223,8 @@ sub setScript {
     my $this = shift;
     my $script = shift;
 
-    if (! defined $script || ref ($script) ne "ROK4::Core::Script") {
-        ERROR("We expect to have a ROK4::Core::Script object.");
+    if (! defined $script || ref ($script) ne "ROK4::PREGENERATION::Script") {
+        ERROR("We expect to have a ROK4::PREGENERATION::Script object.");
     }
 
     $this->{script} = $script;

@@ -71,7 +71,6 @@ log_level = INFO
 | `image_width`       | Nombre de tuiles dans une dalle dans le sens de la largeur                                                                                 | `16`                             |
 | `image_height`      | Nombre de tuiles dans une dalle dans le sens de la hauteur                                                                                 | `16`                             |
 | `tms_name`          | Nom du Tile Matrix Set de la pyramide, avec l'extension `.json`                                                                             | obligatoire si pas d'ancêtre     |
-| `tms_path`          | Dossier contenant le TMS                                                                                                                   | obligatoire                      |
 | `pyr_level_top`     | Niveau du haut de la pyramide, niveau haut du TMS utilisé si non fourni                                                                    |                                  |
 | `compression`       | Compression des données dans les tuiles                                                                                                    | `raw`                            |
 | `compressionoption` | Option complémentaire à la compression                                                                                                     | `none`                           |
@@ -127,7 +126,6 @@ pyr_name_new = MERGE
 pyr_level_top = 6
 
 tms_name = PM.json
-tms_path = /home/IGN/TMS
 
 dir_depth = 2
 image_width = 16

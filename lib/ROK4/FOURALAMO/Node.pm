@@ -42,7 +42,7 @@ Class: ROK4::FOURALAMO::Node
 
 (see libperlauto/Core_Node.png)
 
-Describe a node of a <ROK4::Core::QTree> or a <ROK4::Core::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
+Describe a node of a <ROK4::PREGENERATION::QTree> or a <ROK4::PREGENERATION::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
 
 Using:
     (start code)
@@ -52,7 +52,7 @@ Using:
     
     my $graph = ROK4::Core::Qtree->new(...)
     #or
-    my $graph = ROK4::Core::NNGraph->new(...)
+    my $graph = ROK4::PREGENERATION::NNGraph->new(...)
     
     my $node = ROK4::FOURALAMO::Node->new({
         col => 51,
@@ -73,9 +73,9 @@ Attributes:
     workImageBasename - string - <LEVEL>_<COL>_<ROW>_I
 
     tm - <ROK4::Core::TileMatrix> - Tile matrix associated to the level which the node belong to.
-    graph - <ROK4::Core::NNGraph> or <ROK4::Core::QTree> - Graph which contains the node.
+    graph - <ROK4::PREGENERATION::NNGraph> or <ROK4::PREGENERATION::QTree> - Graph which contains the node.
 
-    script - <ROK4::Core::Script> - Script in which the node will be generated
+    script - <ROK4::PREGENERATION::Script> - Script in which the node will be generated
 =cut
 
 ################################################################################
@@ -112,7 +112,7 @@ Parameters (hash):
     col - integer - Node's column
     row - integer - Node's row
     tm - <ROK4::Core::TileMatrix> - Tile matrix of the level which node belong to
-    graph - <ROK4::Core::NNGraph> or <ROK4::Core::QTree> - Graph containing the node.
+    graph - <ROK4::PREGENERATION::NNGraph> or <ROK4::PREGENERATION::QTree> - Graph containing the node.
 
 See also:
     <_init>
@@ -257,14 +257,14 @@ sub getScript {
 Function: setScript
 
 Parameters (list):
-    script - <ROK4::Core::Script> - Script to set.
+    script - <ROK4::PREGENERATION::Script> - Script to set.
 =cut
 sub setScript {
     my $this = shift;
     my $script = shift;
     
-    if (! defined $script || ref ($script) ne "ROK4::Core::Script") {
-        ERROR("We expect to a ROK4::Core::Script object.");
+    if (! defined $script || ref ($script) ne "ROK4::PREGENERATION::Script") {
+        ERROR("We expect to a ROK4::PREGENERATION::Script object.");
     }
     
     $this->{script} = $script; 
@@ -326,7 +326,7 @@ sub getChildren {
 Function: makeJsons
 
 Parameters (list):
-    datasource - <ROK4::Core::DataSource> - To use to extract vector data.
+    datasource - <ROK4::PREGENERATION::DataSource> - To use to extract vector data.
 
 Code exmaple:
     (start code)
@@ -402,7 +402,7 @@ sub pbf2cache {
 Function: makeTiles
 
 Parameters (list):
-    datasource - <ROK4::Core::DataSource> - To use to tile vector data.
+    datasource - <ROK4::PREGENERATION::DataSource> - To use to tile vector data.
 
 Returns:
     TRUE if success, FALSE if failure

@@ -259,11 +259,6 @@ sub init {
     }
     $options{pyr} = $pyrObj;
 
-    if (! $options{pyr}->bindTileMatrixSet($options{tmsdir})) {
-        ERROR("Cannot bind TMS to pyramid !");
-        return FALSE;
-    }
-
     if (! $options{pyr}->getTileMatrixSet()->isQTree()) {
         ERROR("Only QTree TMS is handled by 4head");
         return FALSE;

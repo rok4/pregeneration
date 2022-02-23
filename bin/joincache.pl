@@ -68,7 +68,7 @@ use ROK4::Core::TileMatrixSet;
 use ROK4::Core::TileMatrix;
 use ROK4::Core::PyramidRaster;
 use ROK4::Core::LevelRaster;
-use ROK4::Core::Script;
+use ROK4::PREGENERATION::Script;
 use ROK4::Core::ProxyGDAL;
 
 use ROK4::JOINCACHE::Node;
@@ -121,7 +121,7 @@ Informations are treated, interpreted and store in this hash, using JOINCACHE cl
     pyramid - <ROK4::Core::PyramidRaster> - Output pyramid
     mergeMethod - string - Method to use merge slabs when several sources
     useMasks - boolean - do we use masks to generate slabs
-    scripts - <ROK4::Core::Script> array - Split scripts to use to generate slabs to merge
+    scripts - <ROK4::PREGENERATION::Script> array - Split scripts to use to generate slabs to merge
     currentScript - integer - Script index to use for the next task (round robin share)
     composition - hash - Defines source pyramids for each level, extent, and order
 |       level_id => [
@@ -319,7 +319,7 @@ sub config {
 =begin nd
 Function: validate
 
-Validates all components, checks consistency and create scripts. Use classes <ROK4::Core::PyramidRaster>, <ROK4::Core::Script>
+Validates all components, checks consistency and create scripts. Use classes <ROK4::Core::PyramidRaster>, <ROK4::PREGENERATION::Script>
 
 See Also:
     <validateSourcePyramids>
@@ -345,17 +345,12 @@ sub validate {
         ERROR(sprintf "Environment variable is missing for a %s storage", $objPyramid->getStorageType());
         return FALSE;
     }
-    
-    if (! $objPyramid->bindTileMatrixSet($pyramidSection->{tms_path})) {
-        ERROR("Cannot bind TMS to output pyramid");
-        return FALSE;
-    }
 
     $this{pyramid} = $objPyramid;
 
     ################## Process
 
-    ALWAYS(">>> Create the ROK4::Core::Script objects ...");
+    ALWAYS(">>> Create the ROK4::PREGENERATION::Script objects ...");
 
     my $processSection = $this{propertiesLoader}->getProcessSection();
 
@@ -373,7 +368,7 @@ sub validate {
     my $scriptInit = ROK4::JOINCACHE::Shell::getScriptInitialization($this{pyramid});
 
     for (my $i = 1; $i <= $processSection->{job_number}; $i++ ) {
-        my $script = ROK4::Core::Script->new({
+        my $script = ROK4::PREGENERATION::Script->new({
             id => "SCRIPT_$i",
             finisher => FALSE,
             shellClass => 'ROK4::JOINCACHE::Shell',
@@ -381,14 +376,14 @@ sub validate {
         });
 
         if (! defined $script) {
-            ERROR ("Cannot create the ROK4::Core::Script object !");
+            ERROR ("Cannot create the ROK4::PREGENERATION::Script object !");
             return FALSE;
         }
 
         push(@{$this{scripts}}, $script);
     }
 
-    my $script = ROK4::Core::Script->new({
+    my $script = ROK4::PREGENERATION::Script->new({
         id => "SCRIPT_FINISHER",
         finisher => TRUE,
         shellClass => 'ROK4::JOINCACHE::Shell',
@@ -396,7 +391,7 @@ sub validate {
     });
 
     if (! defined $script) {
-        ERROR ("Cannot create the ROK4::Core::Script object !");
+        ERROR ("Cannot create the ROK4::PREGENERATION::Script object !");
         return FALSE;
     }
 
@@ -425,7 +420,7 @@ sub validate {
 =begin nd
 Function: validateSourcePyramids
 
-For each source pyramid (<ROK4::Core::PyramidRaster>), we bind the TMS (<ROK4::Core::PyramidRaster::bindTileMatrixSet>) and we check its compatibility with the output pyramid (<ROK4::Core::PyramidRaster::checkCompatibility>)
+For each source pyramid (<ROK4::Core::PyramidRaster>), we check its compatibility with the output pyramid (<ROK4::Core::PyramidRaster::checkCompatibility>)
 =cut
 sub validateSourcePyramids {
     my $tms_path = shift;
@@ -433,11 +428,6 @@ sub validateSourcePyramids {
     my $sourcePyramids = $this{propertiesLoader}->getSourcePyramids();
 
     foreach my $sourcePyramid (values %{$sourcePyramids}) {
-
-        if (! $sourcePyramid->bindTileMatrixSet($tms_path)) {
-            ERROR("Cannot bind TMS to source pyramid " . $sourcePyramid->getName());
-            return FALSE;
-        }
 
         if ($sourcePyramid->checkCompatibility($this{pyramid}) == 0) {
             ERROR (sprintf "Source pyramid (%s) and output pyramid are not compatible", $sourcePyramid->getName());

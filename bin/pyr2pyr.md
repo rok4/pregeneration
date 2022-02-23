@@ -66,7 +66,6 @@ log_level = INFO
 | Paramètre       | Description                                                               | Obligatoire ou valeur par défaut |
 | --------------- | ------------------------------------------------------------------------- | -------------------------------- |
 | `pyr_desc_path` | Chemin vers le descripteur de la pyramide à compiler                      | obligatoire                      |
-| `tms_path`      | Chemin vers le répertoire des Tile Matrix Set                             | obligatoire                      |
 | `follow_links`  | Précise si l'on souhaite suivre les liens lors de la copie de la pyramide | `TRUE`                           |
 
 Valeurs pour `pyr_desc_path` : le chemin est préfixé par le type de stockage du descripteur : `file://`, `s3://`, `ceph://` ou `swift://`
@@ -76,7 +75,6 @@ Valeurs pour `pyr_desc_path` : le chemin est préfixé par le type de stockage d
 [ from ]
 pyr_desc_path=s3://data/IGN/SOURCE_PYRAMID.pyr
 follow_links=FALSE
-tms_path=/home/IGN/TMS/
 ```
 
 ### Section `to`

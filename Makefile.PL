@@ -2,7 +2,6 @@
 
 use ExtUtils::MakeMaker;
 
-
 sub MY::postamble {
     return <<'ECHO_VERSION';
 injectversion ::

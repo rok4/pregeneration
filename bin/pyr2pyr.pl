@@ -69,7 +69,7 @@ use ROK4::PYR2PYR::Shell;
 use ROK4::Core::PyramidRaster;
 use ROK4::Core::PyramidVector;
 use ROK4::Core::ProxyPyramid;
-use ROK4::Core::Script;
+use ROK4::PREGENERATION::Script;
 
 ################################################################################
 # Constantes
@@ -333,11 +333,6 @@ sub doIt {
         return FALSE;
     }
 
-    if (! $pyramidFrom->bindTileMatrixSet($this{params}->{from}->{tms_path})) {
-        ERROR("Cannot bind TMS to input pyramid !");
-        return FALSE;
-    }
-
     my $pyramidFromName = $pyramidFrom->getName();
 
     ############################## LA PYRAMIDE EN SORTIE
@@ -388,7 +383,7 @@ sub doIt {
     my $scriptInd = 0;
     for (my $i = 1 ; $i <= $this{params}->{process}->{job_number}; $i++) {
 
-        my $s = ROK4::Core::Script->new({
+        my $s = ROK4::PREGENERATION::Script->new({
             id => "SCRIPT_$i",
             finisher => FALSE,
             shellClass => 'ROK4::PYR2PYR::Shell',
@@ -403,7 +398,7 @@ sub doIt {
         push(@scripts, $s);
     }
 
-    my $s = ROK4::Core::Script->new({
+    my $s = ROK4::PREGENERATION::Script->new({
         id => "SCRIPT_FINISHER",
         finisher => TRUE,
         shellClass => 'ROK4::PYR2PYR::Shell',

@@ -42,7 +42,7 @@ Class: ROK4::BE4::Node
 
 (see libperlauto/BE4_Node.png)
 
-Describe a node of a <ROK4::Core::QTree> or a <ROK4::Core::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
+Describe a node of a <ROK4::PREGENERATION::QTree> or a <ROK4::PREGENERATION::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
 
 Using:
     (start code)
@@ -52,7 +52,7 @@ Using:
     
     my $graph = ROK4::Core::Qtree->new(...)
     #or
-    my $graph = ROK4::Core::NNGraph->new(...)
+    my $graph = ROK4::PREGENERATION::NNGraph->new(...)
     
     my $node = ROK4::BE4::Node->new({
         col => 51,
@@ -76,12 +76,12 @@ Attributes:
     workExtension - string - extension of the temporary work image, lower case. Default value : tif.
 
     tm - <ROK4::Core::TileMatrix> - Tile matrix associated to the level which the node belong to.
-    graph - <ROK4::Core::NNGraph> or <ROK4::Core::QTree> - Graph which contains the node.
+    graph - <ROK4::PREGENERATION::NNGraph> or <ROK4::PREGENERATION::QTree> - Graph which contains the node.
 
-    script - <ROK4::Core::Script> - Script in which the node will be generated
+    script - <ROK4::PREGENERATION::Script> - Script in which the node will be generated
 
-    sourceNodes - <ROK4::BE4::Node> array - Nodes from which this node is generated (usefull for <ROK4::Core::NNGraph>)
-    geoImages - <ROK4::Core::GeoImage> array - Source images from which this node (usefull for bottom level nodes in a <ROK4::Core::QTree> and a <ROK4::Core::NNGraph>)
+    sourceNodes - <ROK4::BE4::Node> array - Nodes from which this node is generated (usefull for <ROK4::PREGENERATION::NNGraph>)
+    geoImages - <ROK4::Core::GeoImage> array - Source images from which this node (usefull for bottom level nodes in a <ROK4::PREGENERATION::QTree> and a <ROK4::PREGENERATION::NNGraph>)
 =cut
 
 ################################################################################
@@ -118,7 +118,7 @@ Parameters (hash):
     col - integer - Node's column
     row - integer - Node's row
     tm - <ROK4::Core::TileMatrix> - Tile matrix of the level which node belong to
-    graph - <ROK4::Core::NNGraph> or <ROK4::Core::QTree> - Graph containing the node.
+    graph - <ROK4::PREGENERATION::NNGraph> or <ROK4::PREGENERATION::QTree> - Graph containing the node.
 
 See also:
     <_init>
@@ -300,14 +300,14 @@ sub getScript {
 Function: setScript
 
 Parameters (list):
-    script - <ROK4::Core::Script> - Script to set.
+    script - <ROK4::PREGENERATION::Script> - Script to set.
 =cut
 sub setScript {
     my $this = shift;
     my $script = shift;
     
-    if (! defined $script || ref ($script) ne "ROK4::Core::Script") {
-        ERROR("We expect to a ROK4::Core::Script object.");
+    if (! defined $script || ref ($script) ne "ROK4::PREGENERATION::Script") {
+        ERROR("We expect to a ROK4::PREGENERATION::Script object.");
     }
     
     $this->{script} = $script; 
@@ -422,7 +422,7 @@ sub getChildren {
 sub isAboveCutLevelNode {
     my $this = shift;
 
-    if (ref($this->{graph}) ne "ROK4::Core::QTree") {
+    if (ref($this->{graph}) ne "ROK4::PREGENERATION::QTree") {
         return FALSE;
     }
 
@@ -437,7 +437,7 @@ sub isAboveCutLevelNode {
 sub isCutLevelNode {
     my $this = shift;
 
-    if (ref($this->{graph}) ne "ROK4::Core::QTree") {
+    if (ref($this->{graph}) ne "ROK4::PREGENERATION::QTree") {
         return FALSE;
     }
 
@@ -513,7 +513,7 @@ sub mergeNtiff {
     printf CFGF $this->exportForMntConf();
 
     foreach my $img (@{$this->{geoImages}}) {
-        printf CFGF "%s", $img->exportForMntConf();
+        printf CFGF "%s", $img->exportForMntConf($ROK4::BE4::Shell::USEMASK);
     }
     
     close CFGF;
@@ -601,7 +601,7 @@ Function: wms2work
 Fetch image corresponding to the node thanks to 'wget', in one or more steps at a time. WMS service is described in the current graph's datasource. Use the 'Wms2work' bash function.
 
 Parameters (list):
-    harvesting - <ROK4::Core::Harvesting> - To use to harvest image.
+    harvesting - <ROK4::PREGENERATION::Harvesting> - To use to harvest image.
 
 Returns:
     TRUE if success, FALSE if failure

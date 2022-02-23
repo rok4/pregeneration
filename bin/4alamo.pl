@@ -66,8 +66,8 @@ use lib "$Bin/../lib/perl5";
 # My module
 use ROK4::FOURALAMO::PropertiesLoader;
 use ROK4::Core::PyramidVector;
-use ROK4::Core::DataSourceLoader;
-use ROK4::Core::Forest;
+use ROK4::PREGENERATION::DataSourceLoader;
+use ROK4::PREGENERATION::Forest;
 use ROK4::Core::Array;
 use ROK4::Core::CheckUtils;
 
@@ -432,8 +432,8 @@ sub writeListAndReferences {
 
     # On a un ancêtre, il va falloir en référencer toutes les dalles
 
-    if (! defined $forest || ref ($forest) ne "ROK4::Core::Forest" ) {
-        ERROR(sprintf "We need a ROK4::Core::Forest to write pyramid list ! ");
+    if (! defined $forest || ref ($forest) ne "ROK4::PREGENERATION::Forest" ) {
+        ERROR(sprintf "We need a ROK4::PREGENERATION::Forest to write pyramid list ! ");
         return FALSE;
     }
 
@@ -531,15 +531,13 @@ Function: doIt
 
 Steps in order, using parameters :
     - load ancestor pryamid if exists : <ROK4::Core::PyramidVector::new>
-    - load data sources : <ROK4::Core::DataSourceLoader::new>
+    - load data sources : <ROK4::PREGENERATION::DataSourceLoader::new>
     - create the Pyramid object : <ROK4::Core::PyramidVector::new>
-    - update the Pyramid object with the TMS : <ROK4::Core::PyramidVector::bindTileMatrixSet>
-    - update data sources with the levels : <ROK4::Core::DataSourceLoader::updateDataSources>
     - create the pyramid's levels : <ROK4::Core::PyramidVector::addLevel>
-    - create the Forest object : <ROK4::Core::Forest::new>
+    - create the Forest object : <ROK4::PREGENERATION::Forest::new>
     - write the pyramid's list : <writeListAndReferences>
     - write the pyramid's descriptor : <ROK4::Core::PyramidVector::writeDescriptor>
-    - compute trees (write scripts) : <ROK4::Core::Forest::computeGraphs>
+    - compute trees (write scripts) : <ROK4::PREGENERATION::Forest::computeGraphs>
 =cut
 sub doIt {
 
@@ -578,11 +576,6 @@ sub doIt {
         my $updateMode = $params->{pyramid}->{update_mode} ;
         if (! defined ROK4::Core::Array::isInArray($updateMode, @{$UPDATESMODES{$ancestorStorageType}}) ) {
             ERROR("Update mode '$updateMode' is not allowed for $ancestorStorageType pyramids");
-            return FALSE;
-        }
-
-        if (! $objAncestorPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
-            ERROR("Cannot bind TMS to ancestor pyramid !");
             return FALSE;
         }
 
@@ -626,7 +619,7 @@ sub doIt {
     
     ALWAYS(">>> Load Data Source ...");
 
-    $objDSL = ROK4::Core::DataSourceLoader->new($params->{datasource});
+    $objDSL = ROK4::PREGENERATION::DataSourceLoader->new($params->{datasource}, $params->{pyramid}->{tms_name}, $params->{pyramid}->{pyr_level_top});
     if (! defined $objDSL) {
         ERROR("Cannot load data sources !");
         return FALSE;
@@ -663,29 +656,12 @@ sub doIt {
         ERROR(sprintf "Environment variable is missing for a %s storage", $objPyramid->getStorageType());
         return FALSE;
     }
-
-    if (! $objPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
-        ERROR("Cannot bind TMS to output Pyramid !");
-        return FALSE;
-    }
-
-    my $objTMS = $objPyramid->getTileMatrixSet();
-    # update datasources top/bottom levels !
-    my ($bottomOrder,$topOrder) = $objDSL->updateDataSources($objTMS, $params->{pyramid}->{pyr_level_top});
-    if ($bottomOrder == -1) {
-        ERROR("Cannot determine top and bottom levels, from data sources.");
-        return FALSE;
-    }
-    
-    #######################
-    # add levels to pyramid
-    
-    ALWAYS(">>> Determine levels ...");
     
     # Create all level between the bottom and the top
+    my ($bottomOrder,$topOrder) = $objDSL->getExtremOrders();
     for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
 
-        my $ID = $objTMS->getIDfromOrder($order);
+        my $ID = $objPyramid->getTileMatrixSet()->getIDfromOrder($order);
         if (! defined $ID) {
             ERROR(sprintf "Cannot identify ID for the order %s !", $order);
             return FALSE;
@@ -704,7 +680,7 @@ sub doIt {
     
     ALWAYS(">>> Load Forest ...");
   
-    $objForest = ROK4::Core::Forest->new(
+    $objForest = ROK4::PREGENERATION::Forest->new(
         $objPyramid, 
         $objDSL, 
         $params->{process}
