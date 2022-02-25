@@ -1,10 +1,10 @@
 # Outils de pré-génération
 
-Les outils de prégénération travaillent en amont lors de la génération d'une pyramide raster ([BE4](#be4), [JOINCACHE](#joincache)) ou vecteur ([4ALAMO](#4alamo)), d'une recopie de pyramide ([PYR2PYR](#pyr2pyr)) ou du recalcul de tête d'une pyramide raster ([4HEAD](#4head))
+Les outils de pré-génération font partie du projet open-source ROK4 (sous licence CeCILL-C) développé par les équipes du projet [Géoportail](https://www.geoportail.gouv.fr)([@Geoportail](https://twitter.com/Geoportail)) de l’[Institut National de l’Information Géographique et Forestière](https://ign.fr) ([@IGNFrance](https://twitter.com/IGNFrance)). Ils sont écrits en perl et travaillent en amont lors de la génération d'une pyramide raster ([BE4](#be4), [JOINCACHE](#joincache)) ou vecteur ([4ALAMO](#4alamo)), d'une recopie de pyramide ([PYR2PYR](#pyr2pyr)) ou du recalcul de tête d'une pyramide raster ([4HEAD](#4head))
 
-Ces outils, écrits en perl, identifient le travail à réaliser et le répartissent dans des scripts BASH, selon un niveua de parallélisation choisi. C'est l'exécution de ces derniers qui écrit les dalles des pyramides.
+Ces outils identifient le travail à réaliser et le répartissent dans des scripts BASH, selon un niveau de parallélisation choisi. C'est l'exécution de ces derniers qui écrit les dalles des pyramides.
 
-Ces scripts utilisent des commandes du projet ROK4 (dépôt `generation`), ainsi que des commandes externes.
+Ces scripts utilisent les outils de [génération du projet](https://github.com/rok4/generation), ainsi que des commandes externes.
 
 Il est possible que les scripts BASH sachent faire de la reprise sur erreur. Dans chaque dossier temporaire individuel, un fichier liste contient le travail déjà réalisé. Au lancement du script, si ce fichier liste existe déjà, il identifie la dernière dalle générée et ignorera toutes les instructions jusqu'à retomber sur cette dalle. On peut donc en cas d'erreur relancer le script sans paramétrage et reprendre où il en était à l'exécution précédente.
 
@@ -125,12 +125,13 @@ Outils externes utilisés :
 * wget
 
 _Étape 1_
-![BE4 étape 1](../docs/images/be4_part1.png)
+![BE4 étape 1](./docs/images/be4_part1.png)
 
 _Étape 2 (QTree)_
-![BE4 étape 2 QTree](../docs/images/be4_part2_qtree.png)
+![BE4 étape 2 QTree](./docs/images/be4_part2_qtree.png)
+
 _Étape 2 (NNGraph)_
-![BE4 étape 2 NNGraph](../docs/images/be4_part2_nngraph.png)
+![BE4 étape 2 NNGraph](./docs/images/be4_part2_nngraph.png)
 
 [Détails](./bin/be4.md)
 
@@ -150,10 +151,10 @@ Outils de génération utilisés :
 
 
 _Étape 1_
-![JOINCACHE étape 1](../docs/images/joinCache_part1.png)
+![JOINCACHE étape 1](./docs/images/joinCache_part1.png)
 
 _Étape 2_
-![JOINCACHE étape 2](../docs/images/joinCache_part2.png)
+![JOINCACHE étape 2](./docs/images/joinCache_part2.png)
 
 [Détails](./main/joincache.md)
 
@@ -175,10 +176,10 @@ Outils externes utilisés :
 * tippecanoe
 
 _Étape 1_
-![4ALAMO étape 1](../docs/images/ROK4GENERATION/4alamo_part1.png)
+![4ALAMO étape 1](./docs/images/ROK4GENERATION/4alamo_part1.png)
 
 _Étape 2_
-![4ALAMO étape 2](../docs/images/ROK4GENERATION/4alamo_part2.png)
+![4ALAMO étape 2](./docs/images/ROK4GENERATION/4alamo_part2.png)
 
 [Détails](./bin/4alamo.md)
 
@@ -228,9 +229,9 @@ Conversions possibles :
 Parallélisable, reprise sur erreur, progression.
 
 _Étape 1_
-![PYR2PYR étape 1](../docs/images/pyr2pyr_part1.png)
+![PYR2PYR étape 1](./docs/images/pyr2pyr_part1.png)
 
 _Étape 2_
-![PYR2PYR étape 2](../docs/images/pyr2pyr_part2.png)
+![PYR2PYR étape 2](./docs/images/pyr2pyr_part2.png)
 
 [Détails](./bin/pyr2pyr.md)
