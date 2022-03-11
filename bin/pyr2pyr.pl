@@ -459,11 +459,11 @@ sub doIt {
                 my ($col,$row) = split("_", $key);
                 my $input;
                 if ($storageTypeFrom eq "FILE") {
-                    $input = sprintf "%s/%s", $parts->{root}, $parts->{name};
+                    $input = $parts->{origin};
                 } else {
-                    my @p = split("/", $parts->{root});
+                    my @p = split("/", $parts->{origin});
                     shift(@p); # On retire le nom du contenant de la racine
-                    $input = sprintf "%s/%s", join("/", @p), $parts->{name};
+                    $input = sprintf "%s/%s", join("/", @p);
                 }
 
                 my $output = $pyramidTo->getSlabPath($type, $level, $col, $row, FALSE);

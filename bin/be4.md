@@ -131,29 +131,9 @@ Valeurs pour `color` : les valeur pour chaque canal sont séparées par des virg
 | S3               | `pyr_data_bucket_name`    |                                                                             | obligatoire                      |
 | SWIFT            | `pyr_data_container_name` |                                                                             | obligatoire                      |
 
-Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
+Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution (voir [ici](../README.md#variables-denvironnement-utilisées-dans-les-librairies-rok4core)). :
 
-* CEPH
-    - `ROK4_CEPH_CONFFILE`
-    - `ROK4_CEPH_USERNAME`
-    - `ROK4_CEPH_CLUSTERNAME`
-* S3
-    - `ROK4_S3_URL`
-    - `ROK4_S3_KEY`
-    - `ROK4_S3_SECRETKEY`
-* SWIFT
-    * Toujours
-        - `ROK4_SWIFT_AUTHURL`
-        - `ROK4_SWIFT_USER`
-        - `ROK4_SWIFT_PASSWD`
-        - `ROK4_SWIFT_PUBLICURL`
-    * Si authentification native, sans Keystone
-        - `ROK4_SWIFT_ACCOUNT`
-    * Si authentification avec Keystone (présence de `ROK4_KEYSTONE_DOMAINID`)
-        - `ROK4_KEYSTONE_DOMAINID`
-        - `ROK4_KEYSTONE_PROJECTID`
-
-##### Cas d'une pyramide ancêtre
+##### Cas d'une pyramide à mettre à jour
 
 | Paramètre     | Description                                                                                               | Obligatoire ou valeur par défaut        |
 | ------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------- |
@@ -168,7 +148,6 @@ Valeurs pour `update_mode` :
 * `hlink` : disponible pour le stockage fichier uniquement, une nouvelle pyramide est créée, et les dalles de la pyramide ancêtre sont référencées avec un lien physique
 * `copy` : une nouvelle pyramide est créée, et les dalles de la pyramide ancêtre sont recopiée dans la nouvelle pyramide
 * `inject` : il n'y a pas de nouvelle pyramide créée, et la pyramide ancêtre est modifiée
-
 
 #### Exemple
 
