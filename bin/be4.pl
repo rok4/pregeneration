@@ -456,16 +456,6 @@ sub writeListAndReferences {
 
 =begin nd
 Function: doIt
-
-Steps in order, using parameters :
-    - load ancestor pryamid if exists : <ROK4::Core::PyramidRaster::new>
-    - load data sources : <ROK4::PREGENERATION::Source::new>
-    - create the Pyramid object : <ROK4::Core::PyramidRaster::new>
-    - create the pyramid's levels : <ROK4::Core::PyramidRaster::addLevel>
-    - create the Forest object : <ROK4::PREGENERATION::Forest::new>
-    - write the pyramid's list : <writeListAndReferences>
-    - write the pyramid's descriptor : <ROK4::Core::PyramidRaster::writeDescriptor>
-    - compute trees (write scripts) : <ROK4::PREGENERATION::Forest::computeGraphs>
 =cut
 sub doIt {
 
@@ -636,12 +626,15 @@ sub doIt {
     ####################### ADD LEVELS TO OUTPUT PYRAMID
 
     ALWAYS(">>> Add new levels ...");
-    for (my $order = $globalBottomOrder; $order <= $globalTopOrder; $order++) {
-        my $ID = $tms->getIDfromOrder($order);
+    foreach my $s (@{$this{loaded}->{sources}}) {
+        for (my $order = $s->getBottomOrder(); $order <= $s->getTopOrder(); $order++) {
+            
+            my $ID = $tms->getIDfromOrder($order);
 
-        if (! $this{loaded}->{output_pyramid}->addLevel($ID) ) {
-            ERROR("Cannot add level $ID");
-            return FALSE;
+            if (! $this{loaded}->{output_pyramid}->addLevel($ID) ) {
+                ERROR("Cannot add level $ID");
+                return FALSE;
+            }
         }
     }
 
@@ -687,7 +680,7 @@ sub doIt {
         return FALSE;
     }
     
-    DEBUG(sprintf "FOREST (debug export) = %s", $this{loaded}->{forest}->exportForDebug);
+    DEBUG(sprintf "FOREST (debug export) = %s", $objForest->exportForDebug());
 
     #######################
     # Écrire le script principal

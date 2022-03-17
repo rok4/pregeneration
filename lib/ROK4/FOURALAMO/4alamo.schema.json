@@ -1,0 +1,289 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "title": "4ALAMO pregeneration configuration",
+    "type": "object",
+    "required": [
+        "datasources",
+        "pyramid",
+        "process"
+    ],
+    "properties": {
+        "logger": {
+            "type": "object",
+            "description": "Paramètres du logger",
+            "properties": {
+                "layout": {
+                    "type": "string",
+                    "description": "Format du log, selon la syntaxe Log4perl",
+                    "default": "%5p : %m (%M) %n"
+                },
+                "file": {
+                    "type": "string",
+                    "description": "Chemin vers le fichier où écrire les logs. Les logs sont dans la sortie standard si ce paramètre n'est pas fourni"
+                },
+                "level": {
+                    "type": "string",
+                    "description": "Niveau de log",
+                    "enum": [
+                        "DEBUG",
+                        "INFO",
+                        "WARN",
+                        "ERROR",
+                        "ALWAYS"
+                    ],
+                    "default": "WARN"
+                }
+            }
+        },
+        "datasources": {
+            "type": "array",
+            "description": "Sources de données",
+            "items": {
+                "type": "object",
+                "description": "Paramètres du logger",
+                "required": ["source", "bottom", "top"],
+                "properties": {
+                    "bottom": {
+                        "type": "string",
+                        "description": "Niveau du TMS de la pyramide en sortie pour lequel la source est utilisée"
+                    },
+                    "top": {
+                        "type": "string",
+                        "description": "Niveau du TMS de la pyramide en sortie jusqu'auquel la source sera utilisée (par sous échantillonnage successifs)"
+                    },
+                    "source": {
+                        "oneOf": [{
+                            "type": "object",
+                            "description": "Service WMS comme source de données",
+                            "required": ["type", "layers", "url", "area"],
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "description": "Type de source",
+                                    "enum": ["WMS"]
+                                },
+                                "area": {
+                                    "oneOf": [{
+                                        "type": "object",
+                                        "description": "Zone de moissonnage définie par un rectangle englobant",
+                                        "required": ["srs", "bbox"],
+                                        "properties": {
+                                            "srs": {
+                                                "type": "string",
+                                                "description": "Système de coordonnées du rectangle englobant"
+                                            },
+                                            "bbox": {
+                                                "type": "array",
+                                                "description": "Coordonnées des coins, dans l'ordre xmin, ymin, xmax, ymax",
+                                                "items": {
+                                                    "type": "number"
+                                                },
+                                                "minItems": 4,
+                                                "maxItems": 4
+                                            }
+                                        }
+                                    }, {
+                                        "type": "object",
+                                        "description": "Zone de moissonnage définie par une géométrie complexe",
+                                        "required": ["srs", "geometry"],
+                                        "properties": {
+                                            "srs": {
+                                                "type": "string",
+                                                "description": "Système de coordonnées du rectangle englobant"
+                                            },
+                                            "geometry": {
+                                                "type": "string",
+                                                "description": "Fichier contenant une géométrie, en WKT, GeoJSON ou GML"
+                                            }
+                                        }
+                                    }, {
+                                        "type": "object",
+                                        "description": "Liste des indices de dalles",
+                                        "required": ["list"],
+                                        "properties": {
+                                            "list": {
+                                                "type": "string",
+                                                "description": "Fichier contenant la liste des indices des dalles finales à moissonner, chaque ligne correpondant à une dalle au format COL,ROW"
+                                            }
+                                        }
+                                    }]
+                                },
+                                "layers": {
+                                    "type": "string",
+                                    "description": "Couche(s) à moissonner (séparées par des virgules)"
+                                },
+                                "format": {
+                                    "type": "string",
+                                    "description": "Format des images téléchargées",
+                                    "enum": [
+                                        "image/png",
+                                        "image/tiff",
+                                        "image/jpeg",
+                                        "image/x-bil;bits=32",
+                                        "image/tiff&format_options=compression:deflate",
+                                        "image/tiff&format_options=compression:lzw",
+                                        "image/tiff&format_options=compression:packbits",
+                                        "image/tiff&format_options=compression:raw"
+                                    ],
+                                    "default": "image/jpeg"
+                                },
+                                "url": {
+                                    "type": "string",
+                                    "description": "URL du service WMS, avec le protocole et le chemin"
+                                },
+                                "query_parameters": {
+                                    "type": "string",
+                                    "description": "Paramètres de requête hors layers, bbox et srs"
+                                },
+                                "max_pixel_size": {
+                                    "type": "array",
+                                    "description": "Taille maximale d'image moissonnée en pixels, dans le sens de la largeur puis de la hauteur",
+                                    "items": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                },
+                                "min_bytes_size": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                }
+                            }
+                        }]
+                    }
+                }
+            }
+        },
+        "pyramid": {
+            "oneOf": [{
+                    "type": "object",
+                    "description": "Génération d'une nouvelle pyramide",
+                    "required": ["name", "type", "tms", "storage"],
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": ["GENERATION"]
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "Nom de la nouvelle pyramide"
+                        },
+                        "slab_size": {
+                            "type": "array",
+                            "description": "Nombre de tuiles dans la dalle, dans le sens de la largeur puis de la hauteur",
+                            "items": {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "default": [16, 16]
+                        },
+                        "tms": {
+                            "type": "string",
+                            "description": "Nom du TMS de la nouvelle pyramide, avec l'extension json"
+                        },
+                        "storage": {
+                            "type": "object",
+                            "required": ["type", "root"],
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "description": "Type de stockage",
+                                    "enum": [
+                                        "FILE", "S3", "CEPH", "SWIFT"
+                                    ]
+                                },
+                                "root": {
+                                    "type": "string",
+                                    "description": "Racine de stockage : un dossier pour le type FILE, le nom du pool en CEPH, le nom du bucket en S3 et le nom du container en SIFT"
+                                },
+                                "depth": {
+                                    "type": "integer",
+                                    "description": "Profondeur d'arborescence, uniquement dans le cas d'un stockage FILE",
+                                    "minimum": 1,
+                                    "default": 2
+                                }
+                            }
+
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "description": "Génération d'une nouvelle pyramide de mise à jour (référencement d'une pyramide ancêtre)",
+                    "required": ["pyramid_to_update", "type", "name"],
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": ["UPDATE"]
+                        },
+                        "pyramid_to_update": {
+                            "type": "string",
+                            "description": "Chemin vers le descripteur de la pyramide ancêtre à référencer"
+                        },
+                        "update_mode": {
+                            "type": "string",
+                            "description": "Mode de référencement des dalles de la pyramide ancêtre (hlink uniquement dans le cas d'un stockage FICHIER)",
+                            "enum": [
+                                "slink", "hlink", "copy"
+                            ],
+                            "default": "slink"
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "Nom de la nouvelle pyramide"
+                        },
+                        "root": {
+                            "type": "string",
+                            "description": "Dossier dans lequel écrire la donnée de la nouvelle pyramide, dans le cas de la mise à jour d'une pyramide FICHIER"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "description": "Mise à jour d'une pyramide par injection (pas de nouvelle pyramide)",
+                    "required": ["type", "pyramid_to_inject"],
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": ["INJECTION"]
+                        },
+                        "pyramid_to_inject": {
+                            "type": "string",
+                            "description": "Chemin vers le descripteur de la pyramide à mettre à jour par injection"
+                        }
+                    }
+                }
+            ]
+        },
+        "process": {
+            "type": "object",
+            "description": "Paramètres de traitement",
+            "required": ["directories", "parallelization"],
+            "properties": {
+                "directories": {
+                    "type": "object",
+                    "description": "Dossiers de génération",
+                    "required": ["scripts", "local_tmp", "shared_tmp"],
+                    "properties": {
+                        "local_tmp": {
+                            "type": "string",
+                            "description": "Dossier temporaire de génération individuel de chaque script de génération"
+                        },
+                        "shared_tmp": {
+                            "type": "string",
+                            "description": "Dossier temporaire de génération partagé entre les scripts de prégénération et génération"
+                        }
+                    }
+                },
+                "parallelization": {
+                    "type": "integer",
+                    "description": "Niveau de parallélisation, défini le nombre de scripts de génération exécutables en parallèle",
+                    "minimum": 1
+                }
+            }
+        }
+    }
+}

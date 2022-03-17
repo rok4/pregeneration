@@ -73,7 +73,6 @@ use File::Basename;
 use File::Path;
 use Data::Dumper;
 
-use ROK4::PREGENERATION::Harvesting;
 use ROK4::Core::Shell;
 use ROK4::BE4::Node;
 use ROK4::Core::ProxyStorage;
