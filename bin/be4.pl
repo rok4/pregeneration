@@ -64,12 +64,12 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use ROK4::BE4::PropertiesLoader;
 use ROK4::Core::PyramidRaster;
-use ROK4::PREGENERATION::DataSourceLoader;
+use ROK4::BE4::Validator;
+use ROK4::PREGENERATION::Source;
 use ROK4::PREGENERATION::Forest;
 use ROK4::Core::Array;
-use ROK4::Core::CheckUtils;
+use ROK4::Core::Utils;
 
 ################################################################################
 # Constantes
@@ -77,10 +77,10 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 my %UPDATESMODES = (
-    "FILE" => ["slink", "hlink", "copy", "inject" ],
-    "S3" => ["slink", "copy", "inject" ],
-    "SWIFT" => ["slink", "copy", "inject" ],
-    "CEPH" => ["slink", "copy", "inject" ]
+    "FILE" => ["slink", "hlink", "copy" ],
+    "S3" => ["slink", "copy" ],
+    "SWIFT" => ["slink", "copy" ],
+    "CEPH" => ["slink", "copy" ]
 );
 
 ################################################################################
@@ -113,26 +113,20 @@ my %options =
     
     # Configuration
     "properties"  => undef, # file properties params (mandatory) !
-    "environment" => undef  # file environment be4 params (optional) !
 );
 
 =begin nd
 Variable: this
-
-All parameters by section :
-
-    logger - Can be null
-    datasource - 
-    pyramid -
-    process - 
 =cut
 my %this =
 (
-    params => {
-        logger        => undef,
-        datasource    => undef,
-        pyramid       => undef,
-        process       => undef
+    params => undef,
+    loaded => {
+        input_pyramid => undef,
+        output_pyramid => undef,
+        forest => undef,
+        update_mode => undef,
+        sources => []
     },
 );
 
@@ -240,12 +234,6 @@ sub init {
     my $fproperties = File::Spec->rel2abs($options{properties});
     $options{properties} = $fproperties;
     
-    # env : optional !
-    if (defined $options{environment} && $options{environment} ne "") {
-        my $fenvironment = File::Spec->rel2abs($options{environment});
-        $options{environment} = $fenvironment;
-    }
-    
     return TRUE;
 }
 
@@ -262,128 +250,47 @@ sub config {
     ###################
     ALWAYS(">>> Load Properties ...");
     
-    my $fprop = $options{properties};
-    my $objProp = ROK4::BE4::PropertiesLoader->new($fprop);
+    $this{params} = ROK4::Core::Utils::get_hash_from_json_file($options{properties});
     
-    if (! defined $objProp) {
-        ERROR("Can not load specific properties !");
+    if (! defined $this{params}) {
+        ERROR("Can not load properties !");
         return FALSE;
     }
-    
-    my %props = $objProp->getAllProperties();
-    
-    if (! scalar keys %props) {
-        ERROR("All parameters properties are empty !");
-        return FALSE;
-    }
-
-    ###################
-
-    my $hashref;
-
-    ###################
-    ALWAYS(">>> Treat optionnal environment ...");
-
-    my $fenv = undef;
-    $fenv = $options{environment} if (defined $options{environment} && $options{environment} ne "");
-
-    if (defined $fenv) {
-        my $objEnv = ROK4::Core::Config->new($fenv);
-
-        if (! defined $objEnv) {
-            ERROR("Can not load environment properties !");
-            return FALSE;
-        }
-
-        my %envs = $objEnv->getConfigurationCopy();
-
-        if (! scalar keys %envs) {
-            ERROR("All parameters environment are empty !");
-            return FALSE;
-        }
-        
-        foreach (keys %{$this{params}}) {
-            my $href = { map %$_, grep ref $_ eq 'HASH', ($envs{$_}, $props{$_}) };
-            $hashref->{$_} = $href;
-        }
-    } else {
-        foreach (keys %{$this{params}}) {
-            my $href = { map %$_, grep ref $_ eq 'HASH', ($props{$_}) };
-            $hashref->{$_} = $href;
-        }
-    }
-
-    ###################
-
-    if (! defined $hashref) {
-        ERROR("Can not merge all parameters of properties !");
-        return FALSE;
-    }
-  
-    # save params properties
-    $this{params} = $hashref;
     
     ###################
     # check parameters
     
-    my $pyramid     = $this{params}->{pyramid};       #
-    my $logger      = $this{params}->{logger};        # 
-    my $datasource  = $this{params}->{datasource};    #
-    my $process     = $this{params}->{process};       # 
-    
-    # pyramid
-    if (! defined $pyramid) {
-        ERROR("Parameters Pyramid can not be null !");
+    if (! ROK4::BE4::Validator::validate($this{params})) {
+        ERROR("Invalid configuration");
         return FALSE;
     }
-    
-    # datasource
-    if (! defined $datasource) {
-        ERROR("Parameters Datasource can not be null !");
-        return FALSE;
-    }
-    
-    # process
-    if (! defined $process) {
-        ERROR("Parameters Process can not be null !");
-        return FALSE;
-    }
+
+    my $logger = $this{params}->{logger};
     
     # logger
     if (defined $logger) {
-    
-        my @args;
         
-        my $layout= '%5p : %m (%M) %n';
-        my $level = $logger->{log_level};
-        my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
-            if (! ROK4::Core::CheckUtils::isEmpty($logger->{log_path}) && ! ROK4::Core::CheckUtils::isEmpty($logger->{log_file}));
-        
-        $out   = "STDOUT" if (! defined $out);
-        $level = "WARN" if (! defined $level);
-        
-        if ($level =~ /(ALL|DEBUG)/) {
-            $layout = '%5p : %m (%M) %n';
+        my $layout = '%5p : %m (%M) %n';
+        if (defined $logger->{layout}) {
+            $layout = $logger->{layout};
         }
-        
-        # add the param logger by default (user settings !)
-        push @args, {
+
+        my $level = "WARN";
+        if (defined $logger->{level}) {
+            $level = $logger->{level};
+        }
+
+        my $out = "STDOUT";
+        if (defined $logger->{file}) {
+            $out = ">>".$logger->{file};
+        }
+
+        Log::Log4perl->easy_init({
             file   => $out,
             level  => $level,
             layout => $layout,
-        };
-        
-        if ($out ne "STDOUT") {
-            # add the param logger to the STDOUT
-            push @args, {
-                file   => "STDOUT",
-                level  => $level,
-                layout => $layout,
-            },
-        }
-        Log::Log4perl->easy_init(@args);
+        });
     }
-    
     
     return TRUE;
 }
@@ -392,27 +299,11 @@ sub config {
 Function: writeListAndReferences
 =cut
 sub writeListAndReferences {
-    my $forest = shift;
-    my $newpyr = shift;
-    my $ancestor = shift;
-    my $commonTempDir = shift;
 
-    my $updateMode = $this{params}->{pyramid}->{update_mode};
-    my $storageType = $newpyr->getStorageType();
-
-    if ($newpyr->{type} eq "READ") {
-        ERROR("Cannot write list of 'read' pyramid");
-        return FALSE;        
-    }
-
-    if (defined $ancestor && ref ($ancestor) ne "ROK4::Core::PyramidRaster" ) {
-        ERROR(sprintf "Ancestor, if provided, have to be a ROK4::Core::PyramidRaster ! ");
-        return FALSE;
-    }
-
-    my $newListPath = "$commonTempDir/content.list";
-    
-    my $newRoot = $newpyr->getDataRoot();
+    my $storageType = $this{loaded}->{output_pyramid}->getStorageType();
+    my $newListPath = $this{params}->{process}->{directories}->{shared_tmp}."/content.list";
+    my $newRoot = $this{loaded}->{output_pyramid}->getDataRoot();
+    my $updateMode = $this{loaded}->{update_mode};
 
     my $NEWLIST;
 
@@ -421,40 +312,31 @@ sub writeListAndReferences {
         return FALSE;
     }
     
-    if (! defined $ancestor) {
-        # Pas d'ancêtre, on doit juste écrire l'en tête : le dossier propre à cette pyramide ou le nom du conteneur objet
+    if ($this{params}->{pyramid}->{type} eq "GENERATION") {
+        # La pyramide en sortie est nouvelle, sans ancêtre
         print $NEWLIST "0=$newRoot\n";
         print $NEWLIST "#\n";
         close $NEWLIST;
         return TRUE
     }
 
-    ############################## RÉFÉRENCEMENT DES FICHIERS DE L'ANCÊTRE #######################################
+    ############################## LA PYRAMIDE EN SORTIE A DU CONTENU #######################################
+    # Soit par référence des dalles d'un ancêtre
+    # Soit parce que la pyramide en sortie existe déjà (injection)
 
-    # On a un ancêtre, il va falloir en référencer toutes les dalles
-
-    if (! defined $forest || ref ($forest) ne "ROK4::PREGENERATION::Forest" ) {
-        ERROR(sprintf "We need a ROK4::PREGENERATION::Forest to write pyramid list ! ");
-        return FALSE;
-    }
-
-    # On va lire la liste de l'ancêtre
-    if (! $ancestor->loadList()) {
+    # On va lire la liste de la pyramide en entrée (à référencer ou égale à celle en sortie)
+    if (! $this{loaded}->{input_pyramid}->loadList()) {
         ERROR("Cannot cache content list of the ancestor pyramid");
         return FALSE;
     }
 
-    my $slabs = $ancestor->getLevelsSlabs();
+    my $slabs = $this{loaded}->{input_pyramid}->getLevelsSlabs();
     my $rootsNumber = 1;
     my %roots = (
         $newRoot => 0
     );
 
     while( my ($level, $levelSlabs) = each(%{$slabs}) ) {
-        if (! defined $newpyr->getLevel($level)) {
-            # La dalle appartient à un niveau qui n'est pas voulu dans la nouvelle pyramide
-            next;
-        }
 
         while( my ($key, $parts) = each(%{$slabs->{$level}->{DATA}}) ) {
             my $r = $parts->{root};
@@ -480,7 +362,7 @@ sub writeListAndReferences {
                 }
             }
 
-            if (! $forest->containsNode($level,$col,$row)) {
+            if (! $this{loaded}->{forest}->containsNode($level,$col,$row)) {
 
                 if ($updateMode eq 'slink' || $updateMode eq 'inject') {
                     # Dans le cas injectif ou lien symbolique, on a laissé le fichier ou lien tel quel, on remet donc la ligne telle quelle
@@ -499,7 +381,7 @@ sub writeListAndReferences {
             }
         }
 
-        if ($newpyr->ownMasks()) {
+        if (exists $slabs->{$level}->{MASK}) {
             while( my ($key, $parts) = each(%{$slabs->{$level}->{MASK}}) ) {
                 my $r = $parts->{root};
                 my $t = $parts->{name};
@@ -524,7 +406,7 @@ sub writeListAndReferences {
                     }
                 }
 
-                if (! $forest->containsNode($level,$col,$row)) {
+                if (! $this{loaded}->{forest}->containsNode($level,$col,$row)) {
 
                     if ($updateMode eq 'slink' || $updateMode eq 'inject') {
                         # Dans le cas injectif ou lien symbolique, on a laissé le fichier ou lien tel quel, on remet donc la ligne telle quelle
@@ -577,7 +459,7 @@ Function: doIt
 
 Steps in order, using parameters :
     - load ancestor pryamid if exists : <ROK4::Core::PyramidRaster::new>
-    - load data sources : <ROK4::PREGENERATION::DataSourceLoader::new>
+    - load data sources : <ROK4::PREGENERATION::Source::new>
     - create the Pyramid object : <ROK4::Core::PyramidRaster::new>
     - create the pyramid's levels : <ROK4::Core::PyramidRaster::addLevel>
     - create the Forest object : <ROK4::PREGENERATION::Forest::new>
@@ -590,170 +472,207 @@ sub doIt {
     #######################
     # link to parameters
     my $params = $this{params};
-    
-    #######################
-    # objects to implemented
-    
-    my $objAncestorPyramid = undef;
-    my $objPyramid = undef;
-    my $objDSL = undef;
-    my $objForest = undef;
 
-    #######################
-    # if ancestor, read it
+    ####################### LOAD SOURCES
+    ALWAYS(">>> Load data sources...");
 
-    if (exists $params->{pyramid}->{update_pyr} && defined $params->{pyramid}->{update_pyr}) {
-    
+    my $datasources = $this{params}->{datasources};
+
+    my $inputPixel = undef;
+    foreach my $ds (@{$datasources}) {
+        my $objSource = ROK4::PREGENERATION::Source->new($ds);
+        if (! defined $objSource) {
+            ERROR("Cannot load one data source");
+            return FALSE;
+        }
+        my $sourceType = $objSource->getType();
+        if ($sourceType ne "IMAGES" && $sourceType ne "WMS") {
+            ERROR("BE4 generation accept only IMAGES or WMS sources");
+            return FALSE;
+        }
+        push(@{$this{loaded}->{sources}}, $objSource);
+        if ($sourceType eq "IMAGES") {
+            my $pix = $objSource->getPixel();
+            if (! defined $inputPixel) {
+                $inputPixel = $pix;
+                next;
+            }
+            if (! $pix->equals($inputPixel)) {
+                ERROR("We have several images sources but pixel caracteristics are different, we can't extract ONE format from sources for output");
+                return FALSE;
+            }
+        }
+    }
+
+    ####################### PYRAMIDES
+
+    my $pyramid = $this{params}->{pyramid};
+
+    my $storageType = undef;
+
+    if ($pyramid->{type} eq "INJECTION") {
+        ALWAYS(">>> Load the pyramid to inject ...");
+        $this{loaded}->{output_pyramid} = ROK4::Core::PyramidRaster->new("DESCRIPTOR", $pyramid->{pyramid_to_inject} );
+        if (! defined $this{loaded}->{output_pyramid}) {
+            ERROR("Cannot load pyramid to inject");
+            return FALSE;
+        }
+        $this{loaded}->{update_mode} = "inject";
+
+        # La pyramide en sortie peut aussi être considérée comme en entrée
+        $this{loaded}->{input_pyramid} = $this{loaded}->{output_pyramid};
+
+        $storageType = $this{loaded}->{output_pyramid}->getStorageType();
+    }
+    elsif ($pyramid->{type} eq "UPDATE") {
         ALWAYS(">>> Load the pyramid to update ...");
 
-        $objAncestorPyramid = ROK4::Core::PyramidRaster->new("DESCRIPTOR", $params->{pyramid}->{update_pyr} );
-        if (! defined $objAncestorPyramid) {
-            ERROR("Cannot load ancestor pyramid !");
+        $this{loaded}->{input_pyramid} = ROK4::Core::PyramidRaster->new("DESCRIPTOR", $pyramid->{pyramid_to_update} );
+        if (! defined $this{loaded}->{input_pyramid}) {
+            ERROR("Cannot load pyramid to update");
             return FALSE;
         }
-        my $ancestorStorageType = $objAncestorPyramid->getStorageType();
+        $storageType = $this{loaded}->{input_pyramid}->getStorageType();
 
-        if (! defined $params->{pyramid}->{update_mode} || $params->{pyramid}->{update_mode} eq "") {
-            ERROR("If we want to update a pyramid, we need the 'update_mode' parameter");
+        $this{loaded}->{update_mode} = $pyramid->{update_mode};
+        if (! defined $this{loaded}->{update_mode}) {
+            $this{loaded}->{update_mode} = "slink";
+        }
+        if (! defined ROK4::Core::Array::isInArray($this{loaded}->{update_mode}, @{$UPDATESMODES{$storageType}}) ) {
+            ERROR(sprintf "Update mode '%s' is not allowed for $storageType pyramids", $this{loaded}->{update_mode});
             return FALSE;
         }
 
-        my $updateMode = $params->{pyramid}->{update_mode} ;
-        if (! defined ROK4::Core::Array::isInArray($updateMode, @{$UPDATESMODES{$ancestorStorageType}}) ) {
-            ERROR("Update mode '$updateMode' is not allowed for $ancestorStorageType pyramids");
+        if ($pyramid->{name} eq $this{loaded}->{input_pyramid}->getName()) {
+            ERROR(sprintf "The new update pyramid name cannot be the same as the pyramid to update");
             return FALSE;
         }
 
-        # Dans le cas de l'injection, on veut que la nouvelle pyramide soit écrite sur l'ancienne
-        # On va donc modifier le nom et les emplacements pour mettre les mêmes que ceux de l'ancêtre
-        # On s'assure également de la compatibilité du stockage
+        $this{loaded}->{output_pyramid} = $this{loaded}->{input_pyramid}->clone($pyramid->{name}, $pyramid->{root});
+    }
+    elsif ($pyramid->{type} eq "GENERATION") {
+        ALWAYS(">>> Load the pyramid to generate ...");
 
-        if ($updateMode eq "inject") {
-            WARN("'inject' update mode is selected, ancestor is modified, without possible rollback.");
-            if ($ancestorStorageType eq "FILE") {
-                $params->{pyramid}->{pyr_data_path} = $objAncestorPyramid->getStorageRoot();
-                $params->{pyramid}->{pyr_data_pool_name} = undef;
-                $params->{pyramid}->{pyr_data_bucket_name} = undef;
-                $params->{pyramid}->{pyr_data_container_name} = undef;
+        if (defined $inputPixel) {
+            if (! exists $pyramid->{pixel}->{sampleformat}) {
+                $pyramid->{pixel}->{sampleformat} = $inputPixel->getSampleFormatCode();
             }
-            elsif ($ancestorStorageType eq "CEPH") {
-                $params->{pyramid}->{pyr_data_pool_name} = $objAncestorPyramid->getStorageRoot();
-                $params->{pyramid}->{pyr_data_container_name} = undef;
-                $params->{pyramid}->{pyr_data_bucket_name} = undef;
-                $params->{pyramid}->{pyr_data_path} = undef;
+            if (! exists $pyramid->{pixel}->{samplesperpixel}) {
+                $pyramid->{pixel}->{samplesperpixel} = $inputPixel->getSamplesPerPixel();
             }
-            elsif ($ancestorStorageType eq "S3") {
-                $params->{pyramid}->{pyr_data_bucket_name} = $objAncestorPyramid->getStorageRoot();
-                $params->{pyramid}->{pyr_data_pool_name} = undef;
-                $params->{pyramid}->{pyr_data_container_name} = undef;
-                $params->{pyramid}->{pyr_data_path} = undef;
-            }
-            elsif ($ancestorStorageType eq "SWIFT") {
-                $params->{pyramid}->{pyr_data_container_name} = $objAncestorPyramid->getStorageRoot();
-                $params->{pyramid}->{pyr_data_pool_name} = undef;
-                $params->{pyramid}->{pyr_data_bucket_name} = undef;
-                $params->{pyramid}->{pyr_data_path} = undef;
-            }
-            $params->{pyramid}->{pyr_name_new} = $objAncestorPyramid->getName();
         }
-    }
-    
-    #######################
-    # load data source
-    
-    ALWAYS(">>> Load Data Source ...");
 
-    $objDSL = ROK4::PREGENERATION::DataSourceLoader->new($params->{datasource}, $params->{pyramid}->{tms_name}, $params->{pyramid}->{pyr_level_top});
-    if (! defined $objDSL) {
-        ERROR("Cannot load data sources !");
-        return FALSE;
-    }
+        $this{loaded}->{output_pyramid} = ROK4::Core::PyramidRaster->new("VALUES", $pyramid );
+        if (! defined $this{loaded}->{output_pyramid}) {
+            ERROR("Cannot load new pyramid");
+            return FALSE;
+        }
 
-    if ($objDSL->getType() ne "RASTER") {
-        ERROR("BE4 expect RASTER data sources !");
-        return FALSE;
-    }
-    
-    if (! $objDSL->getPixelFromSources($params->{pyramid})) {
-        ERROR("Cannot extract ONE pixel information from sources");
-        return FALSE;
-    }
-
-    #######################
-    # create a pyramid
-    
-    ALWAYS(">>> Load the new pyramid ...");
-    
-    $objPyramid = ROK4::Core::PyramidRaster->new("VALUES", $params->{pyramid}, $objAncestorPyramid );
-    if (! defined $objPyramid) {
-        ERROR("Cannot create output Pyramid !");
-        return FALSE;
-    }
-
-    if (defined $objAncestorPyramid && $objAncestorPyramid->getStorageType() ne $objPyramid->getStorageType()) {
-        ERROR("New pyramid and ancestor have to own the same storage type");
-        ERROR("Ancestor = ".$objAncestorPyramid->getStorageType());
-        ERROR("New = ".$objPyramid->getStorageType());
-        return FALSE;
+        $storageType = $this{loaded}->{output_pyramid}->getStorageType();
     }
 
     # Environment variables nécessaire au stockage
 
-    if (! ROK4::Core::ProxyStorage::checkEnvironmentVariables($objPyramid->getStorageType())) {
-        ERROR(sprintf "Environment variable is missing for a %s storage", $objPyramid->getStorageType());
+    if (! ROK4::Core::ProxyStorage::checkEnvironmentVariables($storageType)) {
+        ERROR("Environment variable is missing for a $storageType storage");
         return FALSE;
     }
-    
-    # Create all level between the bottom and the top
-    my ($bottomOrder,$topOrder) = $objDSL->getExtremOrders();
-    for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
 
-        my $ID = $objPyramid->getTileMatrixSet()->getIDfromOrder($order);
-        if (! defined $ID) {
-            ERROR(sprintf "Cannot identify ID for the order %s !", $order);
+    ####################### UPDATE SOURCES
+
+    ALWAYS(">>> Update sources' levels ...");
+
+    my %orders;
+    my $tms = $this{loaded}->{output_pyramid}->getTileMatrixSet();
+    my $globalTopOrder = undef;
+    my $globalBottomOrder = undef;
+    foreach my $s (@{$this{loaded}->{sources}}) {
+        my $topID = $s->getTopID();
+        my $topOrder = $tms->getOrderfromID($topID);
+        if (! defined $topOrder) {
+            ERROR(sprintf "The top level $topID in a source does not exist in the TMS");
+            return FALSE;
+        }
+        $s->setTopOrder($topOrder);
+
+        my $bottomID = $s->getBottomID();
+        if ($bottomID eq "<AUTO>") {
+            $bottomID = $tms->getBestLevelID($s->getSourceImage()->getBestResImage());
+            if (! defined $bottomID) {
+                ERROR(sprintf "Cannot auto detect the bottom level from image source best resolution");
+                return FALSE;
+            }
+            $s->setBottomID($bottomID);
+        }
+        my $bottomOrder = $tms->getOrderfromID($bottomID);
+        if (! defined $topOrder) {
+            ERROR(sprintf "The bottom level $bottomID in a source does not exist in the TMS");
+            return FALSE;
+        }
+        $s->setBottomOrder($bottomOrder);
+
+        if ($bottomOrder > $topOrder) {
+            ERROR("The bottom level is above the top level for a source ($bottomID > $topID)");
             return FALSE;
         }
 
-        if (! $objPyramid->addLevel($ID, $objAncestorPyramid) ) {
-            ERROR("Cannot add level $ID");
-            return FALSE;            
+        for (my $i = $bottomOrder; $i <= $topOrder; $i++) {
+            if (exists $orders{$i}) {
+                ERROR("We have overlapping between sources");
+                return FALSE;
+            }
+            $orders{$i} = 1;
+        }
+
+        if (! defined $globalTopOrder || $topOrder > $globalTopOrder) {
+            $globalTopOrder = $topOrder;
+        }
+
+        if (! defined $globalBottomOrder || $bottomOrder < $globalBottomOrder) {
+            $globalBottomOrder = $bottomOrder;
         }
     }
     
-    # we cannot write the pyramid descriptor and cache now. We need data's limits, calculated by graphs.
-  
-    #######################
-    # create forest : load graphs
-    
+    ####################### ADD LEVELS TO OUTPUT PYRAMID
+
+    ALWAYS(">>> Add new levels ...");
+    for (my $order = $globalBottomOrder; $order <= $globalTopOrder; $order++) {
+        my $ID = $tms->getIDfromOrder($order);
+
+        if (! $this{loaded}->{output_pyramid}->addLevel($ID) ) {
+            ERROR("Cannot add level $ID");
+            return FALSE;
+        }
+    }
+
+    ####################### FOREST
     ALWAYS(">>> Load Forest ...");
   
-    $objForest = ROK4::PREGENERATION::Forest->new(
-        $objPyramid,
-        $objDSL,
-        $params->{process}
+    $this{loaded}->{forest} = ROK4::PREGENERATION::Forest->new(
+        $this{loaded}->{output_pyramid},
+        $this{loaded}->{sources},
+        $this{params}
     );
-  
-    if (! defined $objForest) {
+
+    if (! defined $this{loaded}->{forest}) {
         ERROR("Can not load the forest !");
         return FALSE;
     }
 
     #######################
-    # write the pyramid list
     
     ALWAYS(">>> Write the pyramid's list ...");
 
-    if ( ! writeListAndReferences($objForest, $objPyramid, $objAncestorPyramid, $params->{process}->{path_temp_common}) ) {
+    if ( ! writeListAndReferences() ) {
         ERROR("Can not write Pyramid list and reference ancestor if exist !");
         return FALSE;
     }
     
     #######################
-    # write the pyramid descriptor
 
     ALWAYS(">>> Write the pyramid's descriptor ...");
 
-    if ( ! $objPyramid->writeDescriptor() ) {
+    if ( ! $this{loaded}->{output_pyramid}->writeDescriptor() ) {
         ERROR("Can not write Pyramid descriptor !");
         return FALSE;
     }
@@ -763,23 +682,23 @@ sub doIt {
     
     ALWAYS(">>> Compute forest ...");
     
-    if (! $objForest->computeGraphs()) {
+    if (! $this{loaded}->{forest}->computeGraphs()) {
         ERROR("Can not compute forest !");
         return FALSE;
     }
     
-    DEBUG(sprintf "FOREST (debug export) = %s", $objForest->exportForDebug);
+    DEBUG(sprintf "FOREST (debug export) = %s", $this{loaded}->{forest}->exportForDebug);
 
     #######################
     # Écrire le script principal
     ALWAYS(">>> Write main script");
-    my $scriptPath = File::Spec->catfile($params->{process}->{path_shell}, "main.sh");
+    my $scriptPath = File::Spec->catfile($this{params}->{process}->{directories}->{scripts}, "main.sh");
     open(MAIN, ">$scriptPath") or do {
         ERROR("Cannot open '$scriptPath' to write in it");
         return FALSE;
     };
 
-    print MAIN ROK4::BE4::Shell::getMainScript($objPyramid);
+    print MAIN ROK4::BE4::Shell::getMainScript($this{loaded}->{output_pyramid});
 
     close(MAIN);
 

@@ -652,9 +652,9 @@ sub getScriptInitialization {
 
     # On a précisé une méthode de fusion, on est dans le cas d'un JOINCACHE, on exporte la fonction overlayNtiff
     $string .= sprintf "OVERLAYNTIFF_OPTIONS=\"-c zip -s %s -p %s -b %s -m $MERGEMETHOD",
-        $pyramid->getImageSpec()->getPixel()->getSamplesPerPixel(),
-        $pyramid->getImageSpec()->getPixel()->getPhotometric(),
-        $pyramid->getNodata()->getValue();
+        $pyramid->getPixel()->getSamplesPerPixel(),
+        $pyramid->getPixel()->getPhotometric(),
+        $pyramid->getNodata();
 
     if ($MERGEMETHOD eq "ALPHATOP") {
         $string .= " -t 255,255,255";
@@ -667,11 +667,11 @@ sub getScriptInitialization {
     $string .= sprintf "WORK2CACHE_MASK_OPTIONS=\"-c zip -t %s %s\"\n", $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight();
 
     $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s -s %s -b %s -a %s\"\n",
-        $pyramid->getImageSpec()->getCompression(),
+        $pyramid->getCompression(),
         $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight(),
-        $pyramid->getImageSpec()->getPixel()->getSamplesPerPixel(),
-        $pyramid->getImageSpec()->getPixel()->getBitsPerSample(),
-        $pyramid->getImageSpec()->getPixel()->getSampleFormat();
+        $pyramid->getPixel()->getSamplesPerPixel(),
+        $pyramid->getPixel()->getBitsPerSample(),
+        $pyramid->getPixel()->getSampleFormat();
 
     if ($pyramid->getStorageType() eq "FILE") {
         $string .= sprintf "PYR_DIR=%s\n", $pyramid->getDataRoot();

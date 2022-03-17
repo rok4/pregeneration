@@ -326,7 +326,7 @@ sub getChildren {
 Function: makeJsons
 
 Parameters (list):
-    datasource - <ROK4::PREGENERATION::DataSource> - To use to extract vector data.
+    datasource - <ROK4::PREGENERATION::Source> - To use to extract vector data.
 
 Code exmaple:
     (start code)
@@ -340,9 +340,9 @@ sub makeJsons {
     my $this = shift;
     my $datasource = shift;
 
-    my ($dburl, $srcSrs) = $datasource->getDatabaseSource()->getDatabaseInfos();
+    my ($dburl, $srcSrs) = $datasource->getSourceDatabase()->getSourceDatabaseInfos();
 
-    my @tables = $datasource->getDatabaseSource()->getSqlExports();
+    my @tables = $datasource->getSourceDatabase()->getSqlExports();
 
     my @tmp = $this->getBBox(TRUE);
     if ($this->getLevel() eq "0") {
@@ -402,7 +402,7 @@ sub pbf2cache {
 Function: makeTiles
 
 Parameters (list):
-    datasource - <ROK4::PREGENERATION::DataSource> - To use to tile vector data.
+    datasource - <ROK4::PREGENERATION::Source> - To use to tile vector data.
 
 Returns:
     TRUE if success, FALSE if failure
@@ -411,7 +411,7 @@ sub makeTiles {
     my $this = shift;
     my $datasource = shift;
     
-    $this->{script}->write(sprintf "MakeTiles %s %s \"%s\"\n", $this->getGraph()->getTopID(), $this->getGraph()->getBottomID(), $datasource->getDatabaseSource()->getTippecanoeOptions());
+    $this->{script}->write(sprintf "MakeTiles %s %s \"%s\"\n", $this->getGraph()->getTopID(), $this->getGraph()->getBottomID(), $datasource->getSourceDatabase()->getTippecanoeOptions());
 
     return TRUE;
 }

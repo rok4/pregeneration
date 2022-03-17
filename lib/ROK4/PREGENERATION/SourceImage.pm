@@ -36,20 +36,20 @@
 ################################################################################
 
 =begin nd
-File: ImageSource.pm
+File: SourceImage.pm
 
-Class: ROK4::PREGENERATION::ImageSource
+Class: ROK4::PREGENERATION::SourceImage
 
-(see libperlauto/Core_ImageSource.png)
+(see libperlauto/Core_SourceImage.png)
 
 Define a data source, with georeferenced image directory.
 
 Using:
     (start code)
-    use ROK4::PREGENERATION::ImageSource;
+    use ROK4::PREGENERATION::SourceImage;
 
-    # ImageSource object creation
-    my $objImageSource = ROK4::PREGENERATION::ImageSource->new({
+    # SourceImage object creation
+    my $objSourceImage = ROK4::PREGENERATION::SourceImage->new({
         path_image => "/home/ign/DATA",
         path_metadata=> "/home/ign/METADATA",
     });
@@ -66,7 +66,7 @@ Attributes:
 
 ################################################################################
 
-package ROK4::PREGENERATION::ImageSource;
+package ROK4::PREGENERATION::SourceImage;
 
 use strict;
 use warnings;
@@ -98,14 +98,14 @@ END {}
 =begin nd
 Constructor: new
 
-ImageSource constructor. Bless an instance.
+SourceImage constructor. Bless an instance.
 
 Parameters (hash):
-    path_image - string - Path to images' directory, to analyze.
+    directory - string - Path to images' directory, to analyze.
     srs - string - SRS of the georeferenced images
     
 See also:
-    <_init>, <computeImageSource>
+    <_init>, <computeSourceImage>
 =cut
 sub new {
     my $class = shift;
@@ -129,7 +129,7 @@ sub new {
     # init. class
     return undef if (! $this->_init($params));
 
-    return undef if (! $this->computeImageSource());
+    return undef if (! $this->computeSourceImage());
 
     return $this;
 }
@@ -140,27 +140,19 @@ Function: _init
 Checks and stores informations.
 
 Parameters (hash):
-    path_image          - string - Path to images' directory, to analyze.
-    path_metadata       - string - Path to metadata's directory, to analyze.
-    srs                 - string - SRS of the georeferenced images
+    directory - string - Path to images' directory, to analyze.
+    srs - string - SRS of the georeferenced images
     
 =cut
 sub _init {
-
     my $this   = shift;
     my $params = shift;
-    
-    return FALSE if (! defined $params);
-    if (! exists($params->{srs}) || ! defined ($params->{srs})) {
-        ERROR ("We have to provide a SRS to create an ImageSource object");
-        return FALSE;
-    }
-    
+        
     # init. params    
-    $this->{PATHIMG} = $params->{path_image} if (exists($params->{path_image}));
+    $this->{PATHIMG} = $params->{directory};
     $this->{srs} = $params->{srs};
     
-    if (! defined ($this->{PATHIMG}) || ! -d $this->{PATHIMG}) {
+    if (! -d $this->{PATHIMG}) {
         ERROR (sprintf "Directory image ('%s') doesn't exist !",$this->{PATHIMG});
         return FALSE;
     }
@@ -174,14 +166,14 @@ sub _init {
 ####################################################################################################
 
 =begin nd
-Function: computeImageSource
+Function: computeSourceImage
 
 Detects all handled files in *PATHIMG* and subdirectories and creates a corresponding <GeoImage> object. Determines data's components and check them.
 
 See also:
     <getListImages>, <GeoImage::computeInfo>
 =cut
-sub computeImageSource {
+sub computeSourceImage {
     my $this = shift;
 
     my $lstGeoImages = $this->{images};

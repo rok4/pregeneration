@@ -86,6 +86,7 @@ our $SCRIPTSDIR;
 our $COMMONTEMPDIR;
 our $PERSONNALTEMPDIR;
 our $PARALLELIZATIONLEVEL;
+our $ISUPDATE;
 
 =begin nd
 Function: setGlobals
@@ -97,6 +98,7 @@ sub setGlobals {
     $PERSONNALTEMPDIR = shift;
     $COMMONTEMPDIR = shift;
     $SCRIPTSDIR = shift;
+    $ISUPDATE = shift;
 
     $COMMONTEMPDIR = File::Spec->catdir($COMMONTEMPDIR);
 

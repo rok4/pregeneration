@@ -482,7 +482,7 @@ sub mergeNtiff {
     # correspondant dans la nouvelle pyramide.
     # On fait de même avec le masque de donnée associé, s'il existe.
     my $imgBg = $this->getSlabPath("DATA", TRUE);
-    if ($this->getGraph()->getPyramid()->ownAncestor() && ROK4::Core::ProxyStorage::isPresent($this->getStorageType(), $imgBg) ) {
+    if ($ROK4::BE4::Shell::ISUPDATE && ROK4::Core::ProxyStorage::isPresent($this->getStorageType(), $imgBg) ) {
         $this->addBgImage();
         
         my $maskBg = $this->getSlabPath("MASK", TRUE);
@@ -630,7 +630,7 @@ sub wms2work {
 
     # Écriture de la commande
 
-    $this->{workExtension} = $harvesting->getHarvestExtension();
+    $this->{workExtension} = $harvesting->getExtension();
     if (scalar @bboxes > 1) {
         $this->{workExtension} = "tif";
     }
@@ -638,8 +638,8 @@ sub wms2work {
     $this->{script}->write(
         sprintf "Wms2work \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \$BBOXES\n",
             $this->{workImageBasename},
-            $harvesting->getHarvestExtension(), $this->{workExtension},
-            $harvesting->getMinSize(), $harvesting->getHarvestUrl($tms->getSRS(), $width, $height), $grid
+            $harvesting->getExtension(), $this->{workExtension},
+            $harvesting->getMinSize(), $harvesting->getGetMapUrl($tms->getSRS(), $width, $height), $grid
     );
     
     return TRUE;
@@ -671,7 +671,7 @@ sub merge4tiff {
     # On fait de même avec le masque de donnée associé, s'il existe.
 
     my $imgBg = $this->getSlabPath("DATA", TRUE);
-    if ($this->getGraph()->getPyramid()->ownAncestor() && ($ROK4::BE4::Shell::USEMASK || scalar @childList != 4) && ROK4::Core::ProxyStorage::isPresent($this->getStorageType(), $imgBg) ) {
+    if ($ROK4::BE4::Shell::ISUPDATE && ($ROK4::BE4::Shell::USEMASK || scalar @childList != 4) && ROK4::Core::ProxyStorage::isPresent($this->getStorageType(), $imgBg) ) {
         $this->addBgImage();
         
         my $maskBg = $this->getSlabPath("MASK", TRUE);
@@ -735,7 +735,7 @@ sub decimateNtiff {
     # correspondant dans la nouvelle pyramide.
     # On fait de même avec le masque de donnée associé, s'il existe.
     my $imgBg = $this->getSlabPath("DATA", TRUE);
-    if ($this->getGraph()->getPyramid()->ownAncestor() && ROK4::Core::ProxyStorage::isPresent($this->getStorageType(), $imgBg) ) {
+    if ($ROK4::BE4::Shell::ISUPDATE && ROK4::Core::ProxyStorage::isPresent($this->getStorageType(), $imgBg) ) {
         $this->addBgImage();
         
         my $maskBg = $this->getSlabPath("MASK", TRUE);

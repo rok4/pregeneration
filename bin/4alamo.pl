@@ -66,10 +66,9 @@ use lib "$Bin/../lib/perl5";
 # My module
 use ROK4::FOURALAMO::PropertiesLoader;
 use ROK4::Core::PyramidVector;
-use ROK4::PREGENERATION::DataSourceLoader;
 use ROK4::PREGENERATION::Forest;
 use ROK4::Core::Array;
-use ROK4::Core::CheckUtils;
+use ROK4::Core::Utils;
 
 ################################################################################
 # Constantes
@@ -357,7 +356,7 @@ sub config {
         my $layout= '%5p : %m (%M) %n';
         my $level = $logger->{log_level};
         my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
-            if (! ROK4::Core::CheckUtils::isEmpty($logger->{log_path}) && ! ROK4::Core::CheckUtils::isEmpty($logger->{log_file}));
+            if (! ROK4::Core::Utils::isEmpty($logger->{log_path}) && ! ROK4::Core::Utils::isEmpty($logger->{log_file}));
         
         $out   = "STDOUT" if (! defined $out);
         $level = "WARN"   if (! defined $level);
@@ -531,7 +530,7 @@ Function: doIt
 
 Steps in order, using parameters :
     - load ancestor pryamid if exists : <ROK4::Core::PyramidVector::new>
-    - load data sources : <ROK4::PREGENERATION::DataSourceLoader::new>
+    - load data sources : <ROK4::PREGENERATION::Source::new>
     - create the Pyramid object : <ROK4::Core::PyramidVector::new>
     - create the pyramid's levels : <ROK4::Core::PyramidVector::addLevel>
     - create the Forest object : <ROK4::PREGENERATION::Forest::new>
@@ -619,7 +618,7 @@ sub doIt {
     
     ALWAYS(">>> Load Data Source ...");
 
-    $objDSL = ROK4::PREGENERATION::DataSourceLoader->new($params->{datasource}, $params->{pyramid}->{tms_name}, $params->{pyramid}->{pyr_level_top});
+    $objDSL = ROK4::PREGENERATION::SourceLoader->new($params->{datasource}, $params->{pyramid}->{tms_name}, $params->{pyramid}->{pyr_level_top});
     if (! defined $objDSL) {
         ERROR("Cannot load data sources !");
         return FALSE;
@@ -667,7 +666,7 @@ sub doIt {
             return FALSE;
         }
 
-        if (! $objPyramid->addLevel($ID, $objAncestorPyramid, $objDSL->getDataSource($order)->getDatabaseSource()) ) {
+        if (! $objPyramid->addLevel($ID, $objAncestorPyramid, $objDSL->getDataSource($order)->getSourceDatabase()) ) {
             ERROR("Cannot add level $ID");
             return FALSE;            
         }

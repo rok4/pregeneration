@@ -94,6 +94,7 @@ our $SCRIPTSDIR;
 our $MNTCONFDIR;
 our $DNTCONFDIR;
 our $USEMASK;
+our $ISUPDATE;
 our $PARALLELIZATIONLEVEL;
 
 =begin nd
@@ -107,8 +108,9 @@ sub setGlobals {
     $COMMONTEMPDIR = shift;
     $SCRIPTSDIR = shift;
     $USEMASK = shift;
+    $ISUPDATE = shift;
 
-    if (defined $USEMASK && uc($USEMASK) eq "TRUE") {
+    if (defined $USEMASK && $USEMASK) {
         $USEMASK = TRUE;
     } else {
         $USEMASK = FALSE;
@@ -1017,7 +1019,7 @@ Function: getScriptInitialization
 Parameters (list):
     pyramid - <ROK4::Core::PyramidVector> - Pyramid to generate
     style - string - Chemin du fichier de style à appliquer
-    intput_nodata - string - Valeur de nodata dans les données en entrée dans le cas d'un style
+    input_nodata - string - Valeur de nodata dans les données en entrée dans le cas d'un style
 
 Returns:
     Global variables and functions to print into script
@@ -1025,49 +1027,43 @@ Returns:
 sub getScriptInitialization {
     my $pyramid = shift;
     my $style = shift;
-    my $intput_nodata = shift;
+    my $input_nodata = shift;
 
     # Variables
 
     my $string = $WORKANDPROG;
 
-    if (defined $style && defined $intput_nodata) {
-        $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -p $style -n $intput_nodata\"\n", $pyramid->getImageSpec()->getInterpolation();
+    if (defined $style && defined $input_nodata) {
+        $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -p $style -n %s\"\n", $pyramid->getInterpolation(), join(",", @{$input_nodata});
 
     } else {
         $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -b %s -a %s -n %s\"\n",
-            $pyramid->getImageSpec()->getInterpolation(),
-            $pyramid->getImageSpec()->getPixel()->getSamplesPerPixel(),
-            $pyramid->getImageSpec()->getPixel()->getBitsPerSample(),
-            $pyramid->getImageSpec()->getPixel()->getSampleFormat(),
-            $pyramid->getNodata()->getValue();
+            $pyramid->getInterpolation(),
+            $pyramid->getPixel()->getSamplesPerPixel(),
+            $pyramid->getPixel()->getBitsPerSample(),
+            $pyramid->getPixel()->getSampleFormat(),
+            $pyramid->getNodata();
     }
     $string .= "MNT_CONF_DIR=$MNTCONFDIR\n";
 
     $string .= sprintf "WORK2CACHE_MASK_OPTIONS=\"-c zip -t %s %s\"\n", $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight();
 
-    $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s -s %s -b %s -a %s",
-        $pyramid->getImageSpec()->getCompression(),
+    $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s -s %s -b %s -a %s\"\n",
+        $pyramid->getCompression(),
         $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight(),
-        $pyramid->getImageSpec()->getPixel()->getSamplesPerPixel(),
-        $pyramid->getImageSpec()->getPixel()->getBitsPerSample(),
-        $pyramid->getImageSpec()->getPixel()->getSampleFormat();
-
-    if ($pyramid->getImageSpec()->getCompressionOption() eq 'crop') {
-        $string .= " -crop\"\n";
-    } else {
-        $string .= "\"\n";
-    }
+        $pyramid->getPixel()->getSamplesPerPixel(),
+        $pyramid->getPixel()->getBitsPerSample(),
+        $pyramid->getPixel()->getSampleFormat();
 
     if ($pyramid->getTileMatrixSet()->isQTree()) {
         $string .= sprintf "MERGE4TIFF_OPTIONS=\"-c zip -g %s -n %s -s %s -b %s -a %s\"\n",
-            $pyramid->getImageSpec()->getGamma(),
-            $pyramid->getNodata()->getValue(),
-            $pyramid->getImageSpec()->getPixel()->getSamplesPerPixel(),
-            $pyramid->getImageSpec()->getPixel()->getBitsPerSample(),
-            $pyramid->getImageSpec()->getPixel()->getSampleFormat();
+            $pyramid->getGamma(),
+            $pyramid->getNodata(),
+            $pyramid->getPixel()->getSamplesPerPixel(),
+            $pyramid->getPixel()->getBitsPerSample(),
+            $pyramid->getPixel()->getSampleFormat();
     } else {
-        $string .= sprintf "DECIMATENTIFF_OPTIONS=\"-c zip -n %s\"\n", $pyramid->getNodata()->getValue();
+        $string .= sprintf "DECIMATENTIFF_OPTIONS=\"-c zip -n %s\"\n", $pyramid->getNodata();
         $string .= "DNT_CONF_DIR=$DNTCONFDIR\n";
     }
 

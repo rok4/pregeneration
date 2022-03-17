@@ -38,7 +38,7 @@
 =begin nd
 File: DataSource.pm
 
-Class: ROK4::PREGENERATION::DataSource
+Class: ROK4::PREGENERATION::Source
 
 (see libperlauto/Core_DataSource.png)
 
@@ -46,13 +46,13 @@ Manage a data source, physical (image files) or virtual (WMS server) or both.
 
 Using:
     (start code)
-    use ROK4::PREGENERATION::DataSource;
+    use ROK4::PREGENERATION::Source;
 
     # DataSource object creation : 4 cases (3 raster and 1 vector)
 
     # RASTER
     # An image directory as source
-    my $objDataSource = ROK4::PREGENERATION::DataSource->new(
+    my $objDataSource = ROK4::PREGENERATION::Source->new(
         "19",
         {
             srs => "IGNF:LAMB93",
@@ -61,7 +61,7 @@ Using:
     );
 
     # A WMS service as source, with an extent to harvest
-    my $objDataSource = ROK4::PREGENERATION::DataSource->new(
+    my $objDataSource = ROK4::PREGENERATION::Source->new(
         "19",
         {
             srs => IGNF:WGS84G,
@@ -82,7 +82,7 @@ Using:
     );
     
     # A WMS service as source, with the list of slab to harvest
-    my $objDataSource = ROK4::PREGENERATION::DataSource->new(
+    my $objDataSource = ROK4::PREGENERATION::Source->new(
         "19",
         {
             srs => IGNF:WGS84G,
@@ -104,7 +104,7 @@ Using:
     
     # VECTOR
     # A database source, with the extent to harvest
-    my $objDataSource = ROK4::PREGENERATION::DataSource->new(
+    my $objDataSource = ROK4::PREGENERATION::Source->new(
         "19",
         {
            "srs" => "EPSG:3857",
@@ -139,14 +139,14 @@ Attributes:
     list - string - File path, containing a list of image indices (I,J) to harvest.
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
 
-    imageSource - <ROK4::PREGENERATION::ImageSource> - Georeferenced images' source.
-    harvesting - <ROK4::PREGENERATION::Harvesting> - WMS server.
-    databaseSource - <ROK4::PREGENERATION::DatabaseSource> - PostgreSQL server.
+    images - <ROK4::PREGENERATION::SourceImage> - Georeferenced images' source.
+    wms - <ROK4::PREGENERATION::SourceWMS> - WMS server.
+    database - <ROK4::PREGENERATION::SourceDatabase> - PostgreSQL server.
 =cut
 
 ################################################################################
 
-package ROK4::PREGENERATION::DataSource;
+package ROK4::PREGENERATION::Source;
 
 use strict;
 use warnings;
@@ -156,9 +156,9 @@ use Data::Dumper;
 use List::Util qw(min max);
 
 # My module
-use ROK4::PREGENERATION::ImageSource;
-use ROK4::PREGENERATION::Harvesting;
-use ROK4::PREGENERATION::DatabaseSource;
+use ROK4::PREGENERATION::SourceImage;
+use ROK4::PREGENERATION::SourceWMS;
+use ROK4::PREGENERATION::SourceDatabase;
 use ROK4::Core::ProxyGDAL;
 
 
@@ -183,42 +183,39 @@ Constructor: new
 DataSource constructor. Bless an instance.
 
 Parameters (list):
-    level - string - Base level (bottom) for this data source (can be <AUTO> if image source).
     params - hash - Data source parameters (see <_load> for details).
 
 See also:
-    <_load>, <computeGlobalInfo>
+    <_load>
 =cut
 sub new {
     my $class = shift;
-    my $level = shift;
     my $params = shift;
 
     $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $this = {
-        # Global information
+        type => undef,
+        
         bottomID => undef,
         bottomOrder => undef,
         topID => undef,
         topOrder => undef,
+
         bbox => undef,
         list => undef,
         extent => undef,
         srs => undef,
-        # Image source
-        imageSource => undef,
-        # Harvesting
-        harvesting => undef,
-        # Database
-        databaseSource => undef
+
+        images => undef,
+        wms => undef,
+        database => undef
     };
 
     bless($this, $class);
 
     # load. class
-    return undef if (! $this->_load($level,$params));
-    return undef if (! $this->computeGlobalInfo());
+    return undef if (! $this->_load($params));
 
     return $this;
 }
@@ -227,171 +224,97 @@ sub new {
 Function: _load
 
 Sorts parameters, relays to concerned constructors and stores results.
-
-(see ROK4GENERATION/datasource.png)
-
-Parameters (list):
-    level - string - Base level (bottom) for this data source.
-    params - hash - Data source parameters :
-    (start code)
-            # common part
-            srs - string
-
-            # image source part
-            path_image          - string
-
-            # harvesting part
-            wms_layer - string
-            wms_url - string
-            wms_version - string
-            wms_request - string
-            wms_format - string
-            wms_bgcolor - string
-            wms_transparent - string
-            wms_style - string
-            min_size - string
-            max_width - string
-            max_height - string
-    (end code)
-    This hash is directly and entirely relayed to <ImageSource::new> (even though only common and harvesting parts will be used) and harvesting part is directly relayed to <ROK4::PREGENERATION::Harvesting::new> (see parameters' meaning).
 =cut
 sub _load {
     my $this   = shift;
-    my $level = shift;
     my $params = shift;
     
-    return FALSE if (! defined $params);
+    $this->{bottomID} = $params->{bottom};
+    $this->{topID} = $params->{top};
 
-    if (! defined $level || $level eq "") {
-        ERROR("A data source have to be defined with a level !");
+    $this->{type} = $params->{source}->{type};
+    if ($this->{type} eq "IMAGES") {
+        $this->{images} = ROK4::PREGENERATION::SourceImage->new($params->{source});
+        if (! defined $this->{images}) {
+            ERROR("Cannot load a IMAGES source");
+            return FALSE;
+        }
+        $this->{srs} = $params->{source}->{srs};
+        my @BBOX = $this->{images}->computeBBox();
+        $this->{bbox} = \@BBOX;
+    }
+    elsif ($this->{type} eq "WMS") {
+        $this->{wms} = ROK4::PREGENERATION::SourceWMS->new($params->{source});
+        if (! defined $this->{wms}) {
+            ERROR("Cannot load a WMS source");
+            return FALSE;
+        }
+        if (exists $params->{source}->{area}->{srs}) {
+            $this->{srs} = $params->{source}->{area}->{srs};
+        }
+        if (exists $params->{source}->{area}->{bbox}) {
+            $this->{bbox} = $params->{source}->{area}->{bbox};
+        }
+        if (exists $params->{source}->{area}->{geometry}) {
+            $this->{extent} = $params->{source}->{area}->{geometry};
+        }
+        if (exists $params->{source}->{area}->{list}) {
+            $this->{list} = $params->{source}->{area}->{list};
+        }
+    }
+    elsif ($this->{type} eq "POSTGRESQL") {
+        $this->{database} = ROK4::PREGENERATION::SourceDatabase->new($params->{source});
+        if (! defined $this->{database}) {
+            ERROR("Cannot load a POSTGRESQL source");
+            return FALSE;
+        }
+        if (exists $params->{source}->{area}->{srs}) {
+            $this->{srs} = $params->{source}->{area}->{srs};
+        }
+        if (exists $params->{source}->{area}->{bbox}) {
+            $this->{bbox} = $params->{source}->{area}->{bbox};
+        }
+        if (exists $params->{source}->{area}->{geometry}) {
+            $this->{extent} = $params->{source}->{area}->{geometry};
+        }
+        if (exists $params->{source}->{area}->{list}) {
+            $this->{list} = $params->{source}->{area}->{list};
+        }
+    }
+
+    if ($this->{bottomID} eq "<AUTO>" && $this->{type} ne "IMAGES") {
+        ERROR("Auto detect the bottom level is only possible with image source");
         return FALSE;
     }
-    $this->{bottomID} = $level;
 
-    if (! exists $params->{srs} || ! defined $params->{srs}) {
-        ERROR("A data source have to be defined with the 'srs' parameter !");
-        return FALSE;
-    }
-    $this->{srs} = $params->{srs};
-
-    # bbox is optionnal if we have an ImageSource (checked in computeGlobalInfo)
-    if (exists $params->{extent} && defined $params->{extent}) {
-        $this->{extent} = $params->{extent};
-    }
-    
-    if (exists $params->{list} && defined $params->{list}) {
-        $this->{list} = $params->{list};
-    }
-
-    # Un dossier d'image en source ?
-    if (exists $params->{path_image}) {
-        $this->{imageSource} = ROK4::PREGENERATION::ImageSource->new($params);
-        if (! defined $this->{imageSource}) {
-            ERROR("Cannot create the ImageSource object");
-            return FALSE;
-        }
-    }
-    # Des paramètres de moissonnage WMS comme source ?
-    elsif (exists $params->{wms_layer}) {
-        $this->{harvesting} = ROK4::PREGENERATION::Harvesting->new($params);
-        if (! defined $this->{harvesting}) {
-            ERROR("Cannot create the Harvesting object");
-            return FALSE;
-        }
-    }
-    # Des paramètres de base de données comme source ?
-    elsif (exists $params->{db}) {
-        $this->{databaseSource} = ROK4::PREGENERATION::DatabaseSource->new($params);
-        if (! defined $this->{databaseSource}) {
-            ERROR("Cannot create the DatabaseSource object");
-            return FALSE;
-        }
-    }
-    # Sinon c'est une erreur    
-    else {
-        ERROR("A data source must have EITHER a ImageSource OR a Harvesting OR a DatabaseSource !");
-        return FALSE;
-    }
-    
-    return TRUE;
-}
-
-=begin nd
-Function: computeGlobalInfo
-
-Reads the srs, manipulates extent and bounding box.
-
-If an extent is supplied (no image source), 2 cases are possible :
-    - extent is a bbox, as xmin,ymin,xmax,ymax
-    - extent is a file path, file contains a complex polygon, WKT format.
-
-We generate an OGR Geometry from the supplied extent or the image source bounding box.
-=cut
-sub computeGlobalInfo {
-    my $this = shift;
-
-    # Bounding polygon
-    if (defined $this->{imageSource}) {
-        # We have real images for source, bbox will be calculated from them.
-
-        my @BBOX = $this->{imageSource}->computeBBox();
-        $this->{extent} = sprintf "%s,%s,%s,%s", $BBOX[0], $BBOX[1], $BBOX[2], $BBOX[3];
-    }
-    
-    if (defined $this->{extent}) {
-        # On a des images, une bbox ou une géométrie WKT pour définir la zone de génération
-
-        my $WKTextent;
-
-        $this->{extent} =~ s/ //;
-        my @limits = split (/,/,$this->{extent},-1);
-        
-        my $extent;
-        if (scalar @limits == 4) {
-            # user supplied a BBOX
-            $extent = ROK4::Core::ProxyGDAL::geometryFromString("BBOX", $this->{extent});
-            if (! defined $extent) {
-                ERROR(sprintf "Cannot create a OGR geometry from the bbox %s", $this->{extent});
-                return FALSE ;
-            }
-
-        }
-        else {
-            # user supplied a file which contains bounding polygon
-            $extent = ROK4::Core::ProxyGDAL::geometryFromFile($this->{extent});
-            if (! defined $extent) {
-                ERROR(sprintf "Cannot create a OGR geometry from the file %s", $this->{extent});
-                return FALSE ;
-            }
-        }
-        $this->{extent} = $extent;
-
-        my ($xmin,$ymin,$xmax,$ymax) = ROK4::Core::ProxyGDAL::getBbox($this->{extent});
-
-        if (! defined $xmin) {
-            ERROR("Cannot calculate bbox from the OGR Geometry");
-            return FALSE;
-        }
-
-        $this->{bbox} = [$xmin,$ymin,$xmax,$ymax];
-        
-    } elsif (defined $this->{list}) {
+    if (defined $this->{list}) {
         # On a fourni un fichier contenant la liste des images (I et J) à générer
-        
         my $file = $this->{list};
-        
         if (! -e $file) {
             ERROR("Parameter 'list' value have to be an existing file ($file)");
             return FALSE ;
         }
-        
-    } else {
-        ERROR("'extent' or 'list' required in the sources configuration file if no image source !");
-        return FALSE ;
+    }
+    elsif (defined $this->{bbox}) {
+        $this->{extent} = ROK4::Core::ProxyGDAL::geometryFromBbox(@{$this->{bbox}});
+    }
+    elsif (defined $this->{extent}) {
+        my $file = $this->{extent};
+        $this->{extent} = ROK4::Core::ProxyGDAL::geometryFromFile($file);
+        if (! defined $this->{extent}) {
+            ERROR("Cannot create a OGR geometry from the file $file");
+            return FALSE ;
+        }
+
+        my ($xmin,$ymin,$xmax,$ymax) = ROK4::Core::ProxyGDAL::getBbox($this->{extent});
+        if (! defined $xmin) {
+            ERROR("Cannot calculate bbox from the OGR Geometry");
+            return FALSE;
+        }
+        $this->{bbox} = [$xmin,$ymin,$xmax,$ymax];
     }
 
     return TRUE;
-
 }
 
 ####################################################################################################
@@ -402,23 +325,6 @@ sub computeGlobalInfo {
 sub getSRS {
     my $this = shift;
     return $this->{srs};
-}
-
-# Function: getType
-
-=begin nd
-Function: getType
-
-A datasource with a database source will be considered as a VECTOR source. It's a raster source otherwise
-=cut
-sub getType {
-    my $this = shift;
-
-    if (defined $this->{databaseSource}) {
-        return "VECTOR";
-    } else {
-        return "RASTER";
-    }
 }
 
 # Function: getExtent
@@ -433,46 +339,28 @@ sub getList {
     return $this->{list};
 }
 
-# Function: getHarvesting
-sub getHarvesting {
+# Function: getSourceWMS
+sub getSourceWMS {
     my $this = shift;
-    return $this->{harvesting};
+    return $this->{wms};
 }
 
-# Function: getDatabaseSource
-sub getDatabaseSource {
+# Function: getSourceDatabase
+sub getSourceDatabase {
     my $this = shift;
-    return $this->{databaseSource};
+    return $this->{database};
 }
 
-# Function: getImageSource
-sub getImageSource {
+# Function: getSourceImage
+sub getSourceImage {
     my $this = shift;
-    return $this->{imageSource};
+    return $this->{images};
 }
 
-# Function: getImages
-sub getImages {
+# Function: getType
+sub getType {
     my $this = shift;
-    return $this->{imageSource}->getImages();
-}
-
-# Function: hasImages
-sub hasImages {
-    my $this = shift;
-    return (defined $this->{imageSource});
-}
-
-# Function: hasHarvesting
-sub hasHarvesting {
-    my $this = shift;
-    return (defined $this->{harvesting});
-}
-
-# Function: hasDatabase
-sub hasDatabase {
-    my $this = shift;
-    return (defined $this->{databaseSource});
+    return $this->{type};
 }
 
 # Function: getBottomID
@@ -502,10 +390,8 @@ sub getTopOrder {
 # Function: getPixel
 sub getPixel {
     my $this = shift;
-
-    if (! defined $this->{imageSource}) {return undef;}
-    
-    return $this->{imageSource}->getPixel();
+    if (! defined $this->{images}) {return undef;}
+    return $this->{images}->getPixel();
 }
 
 =begin nd
@@ -573,7 +459,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\n Object ROK4::PREGENERATION::DataSource :\n";
+    $export .= sprintf "\n Object ROK4::PREGENERATION::Source :\n";
     $export .= sprintf "\t Extent: %s\n",$this->{extent};
     $export .= sprintf "\t Levels ID (order):\n";
     $export .= sprintf "\t\t- bottom : %s (%s)\n",$this->{bottomID},$this->{bottomOrder};
@@ -583,7 +469,7 @@ sub exportForDebug {
     $export .= sprintf "\t\t- SRS : %s\n",$this->{srs};
     $export .= "\t\t- We have images\n" if (defined $this->{imageSource});
     $export .= "\t\t- We have a WMS service\n" if (defined $this->{harvesting});
-    $export .= "\t\t- We have a database\n" if (defined $this->{databaseSource});
+    $export .= "\t\t- We have a database\n" if (defined $this->{database});
     
     if (defined $this->{bbox}) {
         $export .= "\t\t Bbox :\n";

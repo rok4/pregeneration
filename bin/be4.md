@@ -27,17 +27,14 @@
 
 ### Commandes
 
-* `be4-file.pl --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
-* `be4-ceph.pl --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
-* `be4-s3.pl --conf /home/IGN/conf.txt [--help|--usage|--version]`
-* `be4-swift.pl --conf /home/IGN/conf.txt [--help|--usage|--version]`
+* `be4.pl --conf /home/IGN/conf.json [--env /home/IGN/env.json] [--help|--usage|--version]`
 
 ### Options
 
 * `--help` Affiche le lien vers la documentation utilisateur de l'outil et quitte
 * `--usage` Affiche le lien vers la documentation utilisateur de l'outil et quitte
 * `--version` Affiche la version de l'outil et quitte
-* `--conf <file path>` Execute l'outil en prenant en compte ce fichier de configuration principal
+* `--conf <file path>` Execute l'outil en prenant en compte ce fichier de configuration
 * `--env <file path>` Execute l'outil en prenant en compte ce fichier d'environnement
 
 ## La configuration principale
@@ -109,11 +106,6 @@ Valeurs pour `compression` :
 
 * `raw`, `jpg`, `jpg90`, `zip`, `lzw`, `pkb` : ces compressions officielles du format TIFF permettront une visualisation de la dalle dans un logiciel d'image externe
 * `png` : ce format propre à ROK4 ne sera pas lisible en dehors du projet.
-
-Valeurs pour `compressionoption` :
-
-* `none` : ne change rien
-* `crop` : uniquement disponible pour la compression JPEG ou JPEG90, crop permet de remplir de blanc les blocs (16x16 pixels) contenant un pixel blanc.
 
 Valeurs pour `color` : les valeur pour chaque canal sont séparées par des virgules.
 * pour des canaux entiers non signés sur 8 bits : une valeur entière de 0 à 255. Exemple : `255,255,255` pour une pyramide RGB
@@ -251,11 +243,6 @@ Pour générer une pyramide raster, il faut renseigner pour chaque niveau de cou
 | -------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------- |
 | `srs`                | Système de coordonnées des images géoréférencées                                                               | obligatoire                      |
 | `path_image`         | Dossier contenant les images. Les sous-dossier seront parcourus                                                | obligatoire                      |
-| `preprocess_command` | Permet d'appliquer un prétraitement à chaque image en entrée retenue                                           |                                  |
-| `preprocess_opt_beg` | Définit les options à mettre avant le fichier en entrée à la commande de prétraitement                         |                                  |
-| `preprocess_opt_mid` | Définit les options à mettre entre le fichier en entrée et le fichier en sortie à la commande de prétraitement |                                  |
-| `preprocess_opt_end` | Définit les options à mettre après le fichier en sortie à la commande de prétraitement                         |                                  |
-| `preprocess_tmp_dir` | Dossier dans lequel écrire les images prétraitées                                                              | obligatoire                      |
 
 Les images géoréférencées retenues sont les fichiers :
 

@@ -263,7 +263,7 @@ sub config {
         my $layout= '%5p : %m (%M) %n';
         my $level = $logger->{log_level};
         my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
-            if (! ROK4::Core::CheckUtils::isEmpty($logger->{log_path}) && ! ROK4::Core::CheckUtils::isEmpty($logger->{log_file}));
+            if (! ROK4::Core::Utils::isEmpty($logger->{log_path}) && ! ROK4::Core::Utils::isEmpty($logger->{log_file}));
         
         $out   = "STDOUT" if (! defined $out);
         $level = "WARN"   if (! defined $level);
@@ -301,7 +301,7 @@ sub config {
 
     # Slab size filter ?
     if (exists($this{params}->{process}->{slab_limit}) && defined ($this{params}->{process}->{slab_limit})) {
-        if (! ROK4::Core::CheckUtils::isPositiveInt($this{params}->{process}->{slab_limit})) {
+        if (! ROK4::Core::Utils::isPositiveInt($this{params}->{process}->{slab_limit})) {
             ERROR("If 'process.slab_limit' is given, it must be positive.");
             return FALSE;
         }
@@ -311,7 +311,7 @@ sub config {
 
     # Parallelization level
     if (exists($this{params}->{process}->{job_number}) && defined ($this{params}->{process}->{job_number})) {
-        if (! ROK4::Core::CheckUtils::isStrictPositiveInt($this{params}->{process}->{job_number})) {
+        if (! ROK4::Core::Utils::isStrictPositiveInt($this{params}->{process}->{job_number})) {
             ERROR("If 'process.job_number' is given, it must be stricly positive.");
             return FALSE;
         }

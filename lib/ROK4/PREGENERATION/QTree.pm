@@ -80,7 +80,7 @@ Using:
 
 Attributes:
     pyramid - <ROK4::Core::PyramidRaster> or <ROK4::Core::PyramidVector> - Pyramid linked to this tree.
-    datasource - <ROK4::PREGENERATION::DataSource> - Data source to use to define bottom level nodes and generate them.
+    datasource - <ROK4::PREGENERATION::Source> - Data source to use to define bottom level nodes and generate them.
 
     ct_source_pyramid - <Geo::OSR::CoordinateTransformation> - Coordinate transformation from datasource srs to pyramid srs
     ct_pyramid_source - <Geo::OSR::CoordinateTransformation> - Coordinate transformation from pyramid srs to datasource srs
@@ -118,7 +118,7 @@ use warnings;
 use Math::BigFloat;
 use Data::Dumper;
 
-use ROK4::PREGENERATION::DataSource;
+use ROK4::PREGENERATION::Source;
 use ROK4::BE4::Node;
 use ROK4::FOURALAMO::Node;
 use ROK4::BE4::Shell;
@@ -228,7 +228,7 @@ QTree constructor. Bless an instance.
 
 Parameters (list):
     objForest - <ROK4::PREGENERATION::Forest> - Forest which this tree belong to
-    objSrc - <ROK4::PREGENERATION::DataSource> - Datasource which determine bottom level nodes
+    objSrc - <ROK4::PREGENERATION::Source> - Datasource which determine bottom level nodes
 
 See also:
     <_init>, <_load>
@@ -264,8 +264,8 @@ sub new {
         ERROR("We need a ROK4::PREGENERATION::Forest to create a QTree");
         return FALSE;
     }
-    if (! defined $objSrc || ref ($objSrc) ne "ROK4::PREGENERATION::DataSource") {
-        ERROR("We need a ROK4::PREGENERATION::DataSource to create a QTree");
+    if (! defined $objSrc || ref ($objSrc) ne "ROK4::PREGENERATION::Source") {
+        ERROR("We need a ROK4::PREGENERATION::Source to create a QTree");
         return FALSE;
     }
 
@@ -382,9 +382,9 @@ sub identifyBottomNodes {
     my $datasource = $this->{datasource};
     my ($TPW,$TPH) = ($this->{pyramid}->getTilesPerWidth,$this->{pyramid}->getTilesPerHeight);
     
-    if ($datasource->hasImages() ) {
+    if ($datasource->getType() eq "IMAGES" ) {
         # We have real data as source. Images determine bottom tiles
-        my @images = $datasource->getImages();
+        my @images = $datasource->getSourceImage()->getImages();
         foreach my $objImg (@images){
             # On reprojette l'emprise si nécessaire
             my @bbox = ROK4::Core::ProxyGDAL::convertBBox($this->{ct_source_pyramid}, $objImg->getBBox()); # (xMin, yMin, xMax, yMax)
@@ -402,14 +402,10 @@ sub identifyBottomNodes {
                 for (my $row = $rowMin; $row<= $rowMax; $row++){
                     my $nodeKey = sprintf "%s_%s", $col, $row;
 
-                    if ( $datasource->hasHarvesting() ) {
-                        # we use WMS service to generate this leaf
-                        if (exists $this->{nodes}->{$bottomID}->{$nodeKey}) {
-                            # This Node already exists
-                            next;
-                        }
-                        # Create a new Node
+                    # we use images to generate this leaf
+                    if (! exists $this->{nodes}->{$bottomID}->{$nodeKey}) {
 
+                        # Create a new Node
                         my $node = $nodeClass->new({
                             col => $col,
                             row => $row,
@@ -419,30 +415,12 @@ sub identifyBottomNodes {
                         if (! defined $node) { 
                             ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
                             return FALSE;
-                        }                        
-
-                        $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
-                    } else {
-                        # we use images to generate this leaf
-                        if (! exists $this->{nodes}->{$bottomID}->{$nodeKey}) {
-
-                            # Create a new Node
-                            my $node = $nodeClass->new({
-                                col => $col,
-                                row => $row,
-                                tm => $tm,
-                                graph => $this
-                            });
-                            if (! defined $node) { 
-                                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
-                                return FALSE;
-                            }
-                            
-                            $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
                         }
-
-                        $this->{nodes}->{$bottomID}->{$nodeKey}->addGeoImage($objImg);
+                        
+                        $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
                     }
+
+                    $this->{nodes}->{$bottomID}->{$nodeKey}->addGeoImage($objImg);
                 }
             }
         }
@@ -725,9 +703,9 @@ sub computeBottomImage {
     my $this = shift;
     my $node = shift;
         
-    if ($this->getDataSource()->hasHarvesting()) {
+    if ($this->getDataSource()->getType() eq "WMS") {
         # Datasource has a WMS service : we have to use it
-        if (! $node->wms2work($this->getDataSource()->getHarvesting())) {
+        if (! $node->wms2work($this->getDataSource()->getSourceWMS())) {
             ERROR(sprintf "Cannot harvest image for node %s", $node->getWorkBaseName());
             return FALSE;
         }

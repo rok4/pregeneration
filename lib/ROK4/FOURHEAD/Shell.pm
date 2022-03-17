@@ -362,14 +362,14 @@ sub getScriptInitialization {
 
     my $string = sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-t %s %s -c %s\"\n",
         $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileWidth(),
-        $pyramid->getImageSpec()->getCompression();
+        $pyramid->getCompression();
 
     $string .= sprintf "WORK2CACHE_MASK_OPTIONS=\"-t %s %s -c zip\"\n",
         $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileWidth();
     
     $string .= sprintf "MERGE4TIFF_OPTIONS=\"-g %s -n %s\"\n",
-        $pyramid->getImageSpec()->getGamma(),
-        $pyramid->getNodata()->getValue();
+        $pyramid->getGamma(),
+        $pyramid->getNodata();
     
     $string .= "TMP_DIR=$PERSONNALTEMPDIR\n";
 

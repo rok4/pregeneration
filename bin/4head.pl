@@ -68,7 +68,7 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use ROK4::Core::PyramidRaster;
-use ROK4::Core::CheckUtils;
+use ROK4::Core::Utils;
 use ROK4::FOURHEAD::Node;
 use ROK4::FOURHEAD::Shell;
 
@@ -298,7 +298,7 @@ sub init {
     if (! defined $options{"parallel"} || $options{"parallel"} eq "") {
         $options{"parallel"} = 1;
     } else {
-        if (! ROK4::Core::CheckUtils::isPositiveInt($options{"parallel"})) {
+        if (! ROK4::Core::Utils::isPositiveInt($options{"parallel"})) {
             ERROR("Parallel option have to be a positive integer");
             return FALSE;
         }        

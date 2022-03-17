@@ -36,52 +36,17 @@
 ################################################################################
 
 =begin nd
-File: Harvesting.pm
+File: SourceWMS.pm
 
-Class: ROK4::PREGENERATION::Harvesting
-
-(see libperlauto/Core_Harvesting.png)
+Class: ROK4::PREGENERATION::SourceWMS
 
 Stores parameters and builds WMS request.
 
-Using:
-    (start code)
-    use ROK4::PREGENERATION::Harvesting;
-
-    # Image width and height not defined
-
-    # Harvesting object creation
-    my $objHarvesting = ROK4::PREGENERATION::Harvesting->new({
-        wms_layer   => "ORTHO_RAW_LAMB93_PARIS_OUEST",
-        wms_url     => "http://localhost/wmts/rok4",
-        wms_version => "1.3.0",
-        wms_format  => "image/tiff"
-    });
-
-    OR
-
-    # Image width and height defined, style, transparent and background color (for a WMS vector)
-
-    # Harvesting object creation
-    my $objHarvesting = ROK4::PREGENERATION::Harvesting->new({
-        wms_layer   => "BDD_WLD_WM",
-        wms_url     => "http://localhost/wmts/rok4",
-        wms_version => "1.3.0",
-        wms_format  => "image/png",
-        wms_bgcolor => "0xFFFFFF",
-        wms_transparent  => "FALSE",
-        wms_style  => "line",
-        max_width  => 1024,
-        max_height  => 1024
-    });
-    (end code)
-
 Attributes:
     URL - string -  Left part of a WMS request, before the *?*.
-    VERSION - string - Parameter *VERSION* of a WMS request : "1.3.0".
-    FORMAT - string - Parameter *FORMAT* of a WMS request : "image/tiff"
+    PARAMETERS - string - Parameter *VERSION* of a WMS request : "1.3.0".
     LAYERS - string - Layer name to harvest, parameter *LAYERS* of a WMS request.
-    OPTIONS - string - Contains style, background color and transparent parameters : STYLES=line&BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE for example. If background color is defined, transparent must be 'FALSE'.
+    extension - string - Requested file extension.
     min_size - integer - Used to remove too small harvested images (full of nodata), in bytes. Can be zero (no limit).
     max_width - integer - Max image's pixel width which will be harvested, can be undefined (no limit).
     max_height - integer - Max image's pixel height which will be harvested, can be undefined (no limit).
@@ -91,7 +56,7 @@ If *max_width* and *max_height* are not defined, images will be harvested all-in
 
 ################################################################################
 
-package ROK4::PREGENERATION::Harvesting;
+package ROK4::PREGENERATION::SourceWMS;
 
 use strict;
 use warnings;
@@ -101,15 +66,10 @@ use Data::Dumper;
 
 use ROK4::Core::Array;
 
-
 ################################################################################
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
-
-# Constant: FORMATS
-# Define allowed values for attribute wms format
-my @FORMATS = ('image/png','image/tiff','image/jpeg','image/x-bil;bits=32','image/tiff&format_options=compression:deflate','image/tiff&format_options=compression:lzw','image/tiff&format_options=compression:packbits','image/tiff&format_options=compression:raw');
 
 ####################################################################################################
 #                                        Group: Constructors                                       #
@@ -118,19 +78,8 @@ my @FORMATS = ('image/png','image/tiff','image/jpeg','image/x-bil;bits=32','imag
 =begin nd
 Constructor: new
 
-Harvesting constructor. Bless an instance.
+SourceWMS constructor. Bless an instance.
 
-Parameters (hash):
-    wms_layer - string - Layer to harvest.
-    wms_url - string - WMS server url.
-    wms_version - string - WMS version.
-    wms_format - string - Result's format.
-    wms_bgcolor - string - Optionnal. Hexadecimal red-green-blue colour value for the background color (white = "0xFFFFFF").
-    wms_transparent - boolean - Optionnal.
-    wms_style - string - Optionnal.
-    min_size - integer - Optionnal. 0 by default
-    max_width - integer - Optionnal.
-    max_height - integer - Optionnal.
 See also:
     <_init>
 =cut
@@ -141,18 +90,18 @@ sub new {
     $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $this = {
-        URL      => undef,
-        VERSION  => undef,
-        FORMAT   => undef,
-        LAYERS    => undef,
-        OPTIONS    => "STYLES=",
+        URL => undef,
+        FULLURL => undef,
+        PARAMETERS => undef,
+        FORMAT => "image/jpeg",
+        LAYERS => undef,
+        extension => undef,
         min_size => 0,
         max_width => undef,
         max_height => undef
     };
 
     bless($this, $class);
-
 
     # init. class
     return undef if (! $this->_init($params));
@@ -164,114 +113,44 @@ sub new {
 Function: _init
 
 Checks and stores attributes' values.
-
-Parameters (hash):
-    wms_layer - string - Layer to harvest.
-    wms_url - string - WMS server url.
-    wms_version - string - WMS version.
-    wms_format - string - Result's format.
-    wms_bgcolor - string - Optionnal. Hexadecimal red-green-blue colour value for the background color (white = "0xFFFFFF").
-    wms_transparent - boolean - Optionnal.
-    wms_style - string - Optionnal.
-    min_size - integer - Optionnal. 0 by default
-    max_width - integer - Optionnal.
-    max_height - integer - Optionnal.
 =cut
 sub _init {
     my $this   = shift;
     my $params = shift;
     
-    return FALSE if (! defined $params);
-    
-    # 'max_width' and 'max_height' are optionnal, but if one is defined, the other must be defined
-    if (exists($params->{max_width}) && defined ($params->{max_width})) {
-        $this->{max_width} = $params->{max_width};
-        if (exists($params->{max_height}) && defined ($params->{max_height})) {
-            $this->{max_height} = $params->{max_height};
-        } else {
-            ERROR("If parameter 'max_width' is defined, parameter 'max_height' must be defined !");
-            return FALSE ;
-        }
-    } else {
-        if (exists($params->{max_height}) && defined ($params->{max_height})) {
-            ERROR("If parameter 'max_height' is defined, parameter 'max_width' must be defined !");
-            return FALSE ;
-        }
+    if (exists $params->{max_pixel_size}) {
+        $this->{max_width} = $params->{max_pixel_size}->[0];
+        $this->{max_height} = $params->{max_pixel_size}->[1];
     }
     
-    # OPTIONS
-    if (exists($params->{wms_style}) && defined ($params->{wms_style})) {
-        # "STYLES=" is always present in the options
-        $this->{OPTIONS} .= $params->{wms_style};
-    }
-        
-    if (exists($params->{wms_bgcolor}) && defined ($params->{wms_bgcolor})) {
-        if ($params->{wms_bgcolor} !~ m/^0x[a-fA-F0-9]{6}/) {
-            ERROR("Parameter 'wms_bgcolor' must be to format '0x' + 6 numbers in hexadecimal format.");
-            return FALSE ;
-        }
-        $this->{OPTIONS} .= "&BGCOLOR=".$params->{wms_bgcolor};
-    }
-    
-    if (exists($params->{wms_transparent}) && defined ($params->{wms_transparent})) {
-        if (uc($params->{wms_transparent}) ne "TRUE" && uc($params->{wms_transparent}) ne "FALSE") {
-            ERROR(sprintf "Parameter 'wms_transparent' have to be 'TRUE' or 'FALSE' (%s).",$params->{wms_transparent});
-            return FALSE ;
-        }
-        $this->{OPTIONS} .= "&TRANSPARENT=".uc($params->{wms_transparent});
-    }
-    
-    if (exists($params->{min_size}) && defined ($params->{min_size})) {
-        if (! ROK4::Core::Utils::isPositiveInt($params->{min_size})) {
-            ERROR("If 'min_size' is given, it must be strictly positive.");
-            return FALSE ;
-        }
-        $this->{min_size} = $params->{min_size};
+    if (exists $params->{min_bytes_size}) {
+        $this->{min_size} = $params->{min_bytes_size};
     }
 
-    # Other parameters are mandatory
     # URL
-    if (! exists($params->{wms_url}) || ! defined ($params->{wms_url})) {
-        ERROR("Parameter 'wms_url' is required !");
-        return FALSE ;
-    }
-    $params->{wms_url} =~ s/http:\/\///;
-    # VERSION
-    if (! exists($params->{wms_version}) || ! defined ($params->{wms_version})) {
-        ERROR("Parameter 'wms_version' is required !");
-        return FALSE ;
-    }
-    # FORMAT
-    if (! exists($params->{wms_format}) || ! defined ($params->{wms_format})) {
-        ERROR("Parameter 'wms_format' is required !");
-        return FALSE ;
-    }
-    if (! defined ROK4::Core::Array::isInArray($params->{wms_format}, @FORMATS)) {
-        ERROR (sprintf "Unknown 'wms_format' : %s !",$params->{wms_format});
-        return undef;
-    }
-    # LAYER
-    if (! exists($params->{wms_layer}) || ! defined ($params->{wms_layer})) {
-        ERROR("Parameter 'wms_layer' is required !");
-        return FALSE ;
-    }
+    $this->{URL} = $params->{url};
+    $this->{URL} =~ s/\?$//;
 
-    $params->{wms_layer} =~ s/ //;
-    my @layers = split (/,/,$params->{wms_layer},-1);
-    foreach my $layer (@layers) {
-        if ($layer eq '') {
-            ERROR(sprintf "Value for 'wms_layer' is not valid (%s) : it must be LAYER[{,LAYER_N}] !",$params->{wms_layer});
-            return FALSE ;
-        }
-        INFO(sprintf "Layer %s will be harvested !",$layer);
+    $this->{FULLURL} = sprintf "%s?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap", $this->{URL};
+
+    # LAYERS
+    $this->{LAYERS} = $params->{layers};
+    $this->{FULLURL} .= "&LAYERS=".$this->{LAYERS};
+
+    # FORMAT
+    if (exists $params->{format} ) {
+        $this->{FORMAT} = $params->{format};
+    }
+    $this->{FULLURL} .= "&FORMAT=".$this->{FORMAT};
+
+    # PARAMETERS
+    if (exists $params->{query_parameters} ) {
+        $this->{PARAMETERS} = $params->{query_parameters};
+        $this->{FULLURL} .= "&".$this->{PARAMETERS};
+    } else {
+        $this->{FULLURL} .= "&STYLES=";
     }
     
-    # init. params    
-    $this->{URL} = $params->{wms_url};
-    $this->{VERSION} = $params->{wms_version};
-    $this->{FORMAT} = $params->{wms_format};
-    $this->{LAYERS} = $params->{wms_layer};
-
     return TRUE;
 }
 
@@ -281,9 +160,9 @@ sub _init {
 
 
 =begin nd
-Function: getHarvestUrl
+Function: getGetMapUrl
 =cut
-sub getHarvestUrl {
+sub getGetMapUrl {
     my $this = shift;
 
     my $srs = shift;
@@ -295,8 +174,7 @@ sub getHarvestUrl {
     my $h = $height;
     if (defined $this->{max_height} && $this->{max_height} < $height) {$h = $this->{max_height};}
 
-    return sprintf "http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=GetMap&FORMAT=%s&CRS=%s&WIDTH=%s&HEIGHT=%s&%s",
-        $this->getURL(), $this->getLayers(), $this->getVersion(), $this->getFormat(), $srs, $w, $h, $this->getOptions();
+    return sprintf "%s&CRS=%s&WIDTH=%s&HEIGHT=%s", $this->{FULLURL}, $srs, $w, $h;
 }
 
 =begin nd
@@ -373,53 +251,23 @@ sub getBboxesList {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Function: getURL
-sub getURL {
-    my $this = shift;
-    return $this->{URL};
-}
-
-# Function: getVersion
-sub getVersion {
-    my $this = shift;
-    return $this->{VERSION};
-}
-
-# Function: getFormat
-sub getFormat {
-    my $this = shift;
-    return $this->{FORMAT};
-}
-
 # Function: getMinSize
 sub getMinSize {
     my $this = shift;
     return $this->{min_size};
 }
 
-# Function: getHarvestExtension
-sub getHarvestExtension {
+# Function: getExtension
+sub getExtension {
     my $this = shift;
-    # Extension des images moissonnées
+
     if ($this->{FORMAT} eq "image/png") {
         return "png";
     } elsif ($this->{FORMAT} eq "image/jpeg") {
-        return "jpeg";
+        return "jpg";
     } else {
         return "tif";
     }
-}
-
-# Function: getLayers
-sub getLayers {
-    my $this = shift;
-    return $this->{LAYERS};
-}
-
-# Function: getOptions
-sub getOptions {
-    my $this = shift;
-    return $this->{OPTIONS};
 }
 
 ####################################################################################################
@@ -440,12 +288,10 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject ROK4::PREGENERATION::Harvesting :\n";
+    $export .= "\nObject ROK4::PREGENERATION::SourceWMS :\n";
     $export .= sprintf "\t URL : %s\n",$this->{URL};
-    $export .= sprintf "\t VERSION : %s\n",$this->{VERSION};
-    $export .= sprintf "\t FORMAT : %s\n",$this->{FORMAT};
+    $export .= sprintf "\t PARAMETERS : %s\n",$this->{PARAMETERS};
     $export .= sprintf "\t LAYERS : %s\n",$this->{LAYERS};
-    $export .= sprintf "\t OPTIONS : %s\n",$this->{OPTIONS};
 
     $export .= "\t Limits : \n";
     $export .= sprintf "\t\t- Size min : %s\n",$this->{min_size};
