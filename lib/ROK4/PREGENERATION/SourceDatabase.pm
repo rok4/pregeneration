@@ -40,40 +40,11 @@ File: SourceDatabase.pm
 
 Class: ROK4::PREGENERATION::SourceDatabase
 
-(see libperlauto/Core_SourceDatabase.png)
-
-Stores parameters.
+Stores parameters about a data source in a PostgreSQL database.
 
 Using:
     (start code)
     use ROK4::PREGENERATION::SourceDatabase;
-
-    # SourceDatabase object creation
-    my $objSourceDatabase = ROK4::PREGENERATION::SourceDatabase->new({
-        "tippecanoe_options" => "-al -ap",
-        "db" => {
-            "host" => "postgis.ign.fr",
-            "port" => "5433",
-            "database" => "geobase",
-            "user" => "ign",
-            "password" => "pwd"
-        },
-        "tables" => [
-            {
-                "schema" => "bdtopo",
-                "native_name" => "limite_administrative_simp",
-                "attributes" => "nom"
-            },
-            {
-                "schema" => "bdtopo",
-                "native_name" => "pai_sante_simp",
-                "final_name" => "sante",
-                "attributes" => "name",
-                "filter" => "urgence = '1'"
-            }
-        ]
-    });
-
     (end code)
 
 Attributes:
@@ -82,34 +53,72 @@ Attributes:
     dbname - string - postgis database name
     username - string - postgis server user
     password - string - postgis server user's password
-    srs - string - data coordinates' system
     tippecanoe_options - string - options for tippecanoe calls
     tables - hash - all informations about wanted tables
-|       {
-|           "schema_name.table" => {
-|               "schema" => "schema_name",
-|               "native_name" => "table",
-|               "final_name" => "public_name",
-|               "attributes" => "att1,att2",
-|               "geometry" => {
-|                   "type" => "MULTIPOLYGON",
-|                   "name" => "the_geom",
-|               },
-|               "attributes_analysis" => {
-|                   att1 => {
-|                       "type" => "float",
-|                       "count" => "1034",
-|                       "min" => "1.02",
-|                       "max" => "1654.9",
-|                   },
-|                   att2 => {
-|                       "type" => "varchar",
-|                       "count" => "2",
-|                       "values" => ['yes', 'no'],
-|                   }
-|               }
-|           }
-|       }
+|        {
+|            'public.departement' => {
+|                'filter' => '',
+|                'final_name' => 'departement',
+|                'attributes' => {
+|                    'ogc_fid' => {
+|                        'max' => 101,
+|                        'min' => 1,
+|                        'count' => 101,
+|                        'type' => 'integer'
+|                    },
+|                    'nom_dep' => {
+|                        'type' => 'character varying(30)',
+|                        'count' => 101
+|                    },
+|                    'insee_reg' => {
+|                        'type' => 'character varying(2)',
+|                        'values' => [
+|                                        '75',
+|                                        '06',
+|                                        '24',
+|                                        '03',
+|                                        '01',
+|                                        '28',
+|                                        '52',
+|                                        '93',
+|                                        '04',
+|                                        '94',
+|                                        '02',
+|                                        '44',
+|                                        '53',
+|                                        '27',
+|                                        '11',
+|                                        '32',
+|                                        '76',
+|                                        '84'
+|                                    ],
+|                        'count' => 18
+|                    },
+|                    'chf_dep' => {
+|                        'count' => 101,
+|                        'type' => 'character varying(5)'
+|                    },
+|                    'id' => {
+|                        'count' => 101,
+|                        'type' => 'character varying(24)'
+|                    },
+|                    'insee_dep' => {
+|                        'type' => 'character varying(3)',
+|                        'count' => 101
+|                    },
+|                    'nom_dep_m' => {
+|                        'count' => 101,
+|                        'type' => 'character varying(30)'
+|                    }
+|                },
+|                'schema' => 'public',
+|                'geometry' => {
+|                                'name' => 'wkb_geometry',
+|                                'type' => 'MULTIPOLYGON'
+|                                },
+|                'native_name' => 'departement'
+|            }
+|        }
 =cut
 
 ################################################################################
@@ -131,21 +140,10 @@ use ROK4::Core::Array;
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-
-# Constant: DEFAULT
-# Define default values for attributes.
-my %DEFAULT;
-
 ################################################################################
 
 BEGIN {}
-INIT {
-    %DEFAULT = (
-        port => 5432,
-        schema => "public",
-        attributes => ""
-    );
-}
+INIT {}
 END {}
 
 ####################################################################################################
@@ -158,31 +156,40 @@ Constructor: new
 SourceDatabase constructor. Bless an instance.
 
 Parameters (hash):
-|   {
-|       "tippecanoe_options" => "-al -ap",
-|       "srs" => "EPSG:4326",
-|       "db" => {
-|           "host" => "postgis.ign.fr",
-|           "port" => "5433",
-|           "database" => "geobase",
-|           "user" => "ign",
-|           "password" => "pwd"
-|       },
-|       "tables" => [
-|           {
-|               "schema" => "bdtopo",
-|               "native_name" => "limite_administrative_simp",
-|               "attributes" => "nom"
-|           },
-|           {
-|               "schema" => "bdtopo",
-|               "native_name" => "pai_sante_simp",
-|               "final_name" => "sante",
-|               "attributes" => "name",
-|               "filter" => "urgence = '1'"
-|           }
-|       ]
-|   }
+|        {
+|          'srs' => 'EPSG:4326',
+|          'db' => {
+|                    'host' => 'localhost',
+|                    'password' => 'reader',
+|                    'database' => 'geodata',
+|                    'user' => 'reader'
+|                  },
+|          'area' => {
+|                      'bbox' => [
+|                                  -5,
+|                                  35,
+|                                  10,
+|                                  50
+|                                ]
+|                    },
+|          'tables' => [
+|                        {
+|                          'schema' => 'essentiels',
+|                          'attributes' => [
+|                                            '*'
+|                                          ],
+|                          'native_name' => 'departement'
+|                        },
+|                        {
+|                          'native_name' => 'region',
+|                          'attributes' => [
+|                                            '*'
+|                                          ],
+|                          'schema' => 'essentiels'
+|                        }
+|                      ],
+|          'type' => 'POSTGRESQL'
+|        }
 
 See also:
     <_init>, <_load>
@@ -195,17 +202,15 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $this = {
         host => undef,
-        port => undef,
+        port => 5432,
         dbname => undef,
         username => undef,
         password => undef,
-        srs => undef,
         tippecanoe_options => "",
         tables => {}
     };
 
     bless($this, $class);
-
 
     # init. class
     return undef if (! $this->_init($params));
@@ -220,43 +225,44 @@ Function: _init
 Checks and stores attributes' values.
 
 Parameters (hash):
-|   {
-|       "srs" => "EPSG:4326",
-|       "tippecanoe_options" => "-al -ap",
-|       "db" => {
-|           "host" => "postgis.ign.fr",
-|           "port" => "5433",
-|           "database" => "geobase",
-|           "user" => "ign",
-|           "password" => "pwd"
-|       },
-|       "tables" => [
-|           {
-|               "schema" => "bdtopo",
-|               "native_name" => "limite_administrative_simp",
-|               "attributes" => "nom"
-|           },
-|           {
-|               "schema" => "bdtopo",
-|               "native_name" => "pai_sante_simp",
-|               "final_name" => "sante",
-|               "attributes" => "name",
-|               "filter" => "urgence = '1'"
-|           }
-|       ]
-|   }
+|        {
+|          'srs' => 'EPSG:4326',
+|          'db' => {
+|                    'host' => 'localhost',
+|                    'password' => 'reader',
+|                    'database' => 'geodata',
+|                    'user' => 'reader'
+|                  },
+|          'area' => {
+|                      'bbox' => [
+|                                  -5,
+|                                  35,
+|                                  10,
+|                                  50
+|                                ]
+|                    },
+|          'tables' => [
+|                        {
+|                          'schema' => 'essentiels',
+|                          'attributes' => [
+|                                            '*'
+|                                          ],
+|                          'native_name' => 'departement'
+|                        },
+|                        {
+|                          'native_name' => 'region',
+|                          'attributes' => [
+|                                            '*'
+|                                          ],
+|                          'schema' => 'essentiels'
+|                        }
+|                      ],
+|          'type' => 'POSTGRESQL'
+|        }
 =cut
 sub _init {
     my $this   = shift;
     my $params = shift;
-    
-    return FALSE if (! defined $params);
-    # SRS
-    if (! exists($params->{srs}) || ! defined $params->{srs}) {
-        ERROR("Parameter 'srs' is required !");
-        return FALSE ;
-    }
-    $this->{srs} = uc($params->{srs});
 
     # TIPPECANOE
     if (exists($params->{tippecanoe_options}) && defined $params->{tippecanoe_options}) {
@@ -264,79 +270,47 @@ sub _init {
     }
     
     # PORT    
-    if (! exists($params->{db}->{port}) || ! defined ($params->{db}->{port})) {
-        $this->{port} = $DEFAULT{port};
-        INFO(sprintf "Default value for 'db.port' : %s", $this->{port});
-    } else {
-        if (int($params->{db}->{port}) <= 0) {
-            ERROR("If 'db.port' is given, it must be strictly positive.");
-            return FALSE ;
-        }
+    if (exists($params->{db}->{port}) && defined ($params->{db}->{port})) {
         $this->{port} = int($params->{db}->{port});
     }
 
     # Other parameters are mandatory
     # HOST
-    if (! exists($params->{db}->{host}) || ! defined ($params->{db}->{host})) {
-        ERROR("Parameter 'db.host' is required !");
-        return FALSE ;
-    }
     $this->{host} = $params->{db}->{host};
     # DATABASE
-    if (! exists($params->{db}->{database}) || ! defined ($params->{db}->{database})) {
-        ERROR("Parameter 'db.database' is required !");
-        return FALSE ;
-    }
     $this->{dbname} = $params->{db}->{database};
     # USERNAME
-    if (! exists($params->{db}->{user}) || ! defined ($params->{db}->{user})) {
-        ERROR("Parameter 'db.user' is required !");
-        return FALSE ;
-    }
     $this->{username} = $params->{db}->{user};
     # PASSWORD
-    if (! exists($params->{db}->{password}) || ! defined ($params->{db}->{password})) {
-        ERROR("Parameter 'db.password' is required !");
-        return FALSE ;
-    }
     $this->{password} = $params->{db}->{password};
 
     # TABLES
-    if (! exists($params->{tables}) || ! defined ($params->{tables})) {
-        ERROR("Parameter 'tables' is required !");
-        return FALSE ;
-    }
-    if (! ref($params->{tables}) eq "ARRAY") {
-        ERROR("Parameter 'tables' have to be an array");
-        return FALSE ;
-    }
-
     foreach my $t (@{$params->{tables}}) {
-        if (! exists($t->{native_name}) || ! defined ($t->{native_name})) {
-            ERROR("Parameter 'native_name' is required for a table !");
-            return FALSE ;
-        }
-        if (! exists($t->{final_name}) || ! defined ($t->{final_name})) {
-            $t->{final_name} = $t->{native_name};
-        }
-        if (! exists($t->{schema}) || ! defined ($t->{schema})) {
-            $t->{schema} = $DEFAULT{schema};
-        }
-        if (! exists($t->{attributes}) || ! defined ($t->{attributes})) {
-            $t->{attributes} = $DEFAULT{attributes};
-        } else {
-            $t->{attributes} =~ s/ //g;
-        }
-        if (! exists($t->{filter}) || ! defined ($t->{filter})) {
-            $t->{filter} = "";
+        my $tab = {
+            native_name => $t->{native_name},
+            final_name => $t->{native_name},
+            schema => "public",
+            attributes => [],
+            filter => ""
+        };
+
+        if (exists($t->{final_name})) {
+            $tab->{final_name} = $t->{final_name};
         }
 
-        $this->{tables}->{sprintf ("%s.%s", $t->{schema}, $t->{native_name})} = $t;
-    }
+        if (exists($t->{schema})) {
+            $tab->{schema} = $t->{schema};
+        }
 
-    if (scalar(keys %{$this->{tables}}) == 0) {
-        ERROR("Parameter 'tables' contains no table");
-        return FALSE ;
+        if (exists($t->{attributes})) {
+            $tab->{attributes} = $t->{attributes};
+        }
+
+        if (exists($t->{filter})) {
+            $tab->{filter} = $t->{filter};
+        }
+
+        $this->{tables}->{sprintf ("%s.%s", $tab->{schema}, $tab->{native_name})} = $tab;
     }
     
     return TRUE;
@@ -383,14 +357,13 @@ sub _load {
 
         my $native_atts = $database->get_attributes_hash($hash->{schema}, $hash->{native_name});
         
-        if ($hash->{attributes} eq "*") {
-            $hash->{attributes} = join(",", keys(%{$native_atts}));
+        if (scalar(@{$hash->{attributes}}) == 1 && $hash->{attributes}->[0] eq "*") {
+            my @all = keys(%{$native_atts});
+            $hash->{attributes} = \@all;
         }
 
-        my @asked_atts = split(/,/, $hash->{attributes});
-
-        $hash->{attributes_analysis} = {};
-        foreach my $a (@asked_atts) {
+        my $analysis = {};
+        foreach my $a (@{$hash->{attributes}}) {
             if ($a eq "") {next;}
 
             if (! exists $native_atts->{$a}) {
@@ -400,28 +373,28 @@ sub _load {
 
             if ($a eq $geomname) {next;}
 
-            $hash->{attributes_analysis}->{$a} = {
+            $analysis->{$a} = {
                 type => $native_atts->{$a}
             };
 
             my $count = $database->get_distinct_values_count($hash->{schema}, $hash->{native_name}, $a);
-            $hash->{attributes_analysis}->{$a}->{count} = $count;
+            $analysis->{$a}->{count} = $count;
 
             my @numerics = ("integer", "real", "double precision", "numeric");
             if (defined ROK4::Core::Array::isInArray($native_atts->{$a}, @numerics)) {
                 my ($min, $max) = $database->get_min_max_values($hash->{schema}, $hash->{native_name}, $a);
                 if (defined $min) {
-                    $hash->{attributes_analysis}->{$a}->{min} = $min;
-                    $hash->{attributes_analysis}->{$a}->{max} = $max;
+                    $analysis->{$a}->{min} = $min;
+                    $analysis->{$a}->{max} = $max;
                 }
             }
 
             elsif ($count <= 50) {
                 my @distincts = $database->get_distinct_values($hash->{schema}, $hash->{native_name}, $a);
-                $hash->{attributes_analysis}->{$a}->{values} = \@distincts;
+                $analysis->{$a}->{values} = \@distincts;
             }
         }
-
+        $hash->{attributes} = $analysis;
     }
 
     $database->disconnect();
@@ -436,7 +409,7 @@ sub _load {
 =begin nd
 Function: getSourceDatabaseInfos
 
-Return database url ("host=postgis.ign.fr dbname=bdtopo user=ign password=PWD port=5432") and datasource projection
+Return database url ("host=postgis.ign.fr dbname=bdtopo user=ign password=PWD port=5432")
 =cut
 sub getSourceDatabaseInfos {
     my $this = shift;
@@ -444,7 +417,7 @@ sub getSourceDatabaseInfos {
     my $url = sprintf "host=%s dbname=%s user=%s password=%s port=%s",
         $this->{host}, $this->{dbname}, $this->{username}, $this->{password}, $this->{port};
 
-    return ($url, $this->{srs});
+    return $url;
 }
 
 =begin nd
@@ -460,9 +433,9 @@ sub getSqlExports {
     while (my ($table, $hash) = each(%{$this->{tables}})) {
 
         my $sql = "";
-        if (scalar(keys %{$hash->{attributes_analysis}}) != 0) {
+        if (scalar(keys %{$hash->{attributes}}) != 0) {
             $sql = sprintf "SELECT %s,%s FROM $table", 
-                join(",", keys(%{$hash->{attributes_analysis}})), 
+                join(",", keys(%{$hash->{attributes}})), 
                 $hash->{geometry}->{name};
         } else {
             # Cas où l'on ne veut aucun attribut sauf la géométrie
@@ -489,14 +462,6 @@ sub getTables {
     my $this = shift;
     return $this->{tables};
 }
-
-
-# Function: getTablesNumber
-sub getTablesNumber {
-    my $this = shift;
-    return scalar(keys %{$this->{tables}});
-}
-
 
 # Function: getTippecanoeOptions
 sub getTippecanoeOptions {

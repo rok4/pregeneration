@@ -129,9 +129,6 @@ sub getPersonnalTempDirectory {
 #                                        Group: MAKE JSONS                                         #
 ####################################################################################################
 
-# Constant: MAKEJSON_W
-use constant MAKEJSON_W => 15;
-
 my $MAKEJSON = <<'FUNCTION';
 
 mkdir -p ${TMP_DIR}/jsons/
@@ -155,9 +152,6 @@ FUNCTION
 ####################################################################################################
 #                                        Group: MAKE TILES                                         #
 ####################################################################################################
-
-# Constant: MAKETILES_W
-use constant MAKETILES_W => 100;
 
 my $MAKETILES = <<'FUNCTION';
 
@@ -183,9 +177,6 @@ FUNCTION
 ####################################################################################################
 #                                        Group: PBF TO CACHE                                       #
 ####################################################################################################
-
-# Constant: PBF2CACHE_W
-use constant PBF2CACHE_W => 1;
 
 my $S3_STORAGE_FUNCTIONS = <<'FUNCTION';
 PushSlab () {

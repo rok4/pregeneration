@@ -49,32 +49,37 @@
                     },
                     "top": {
                         "type": "string",
-                        "description": "Niveau du TMS de la pyramide en sortie jusqu'auquel la source sera utilisée (par sous échantillonnage successifs)"
+                        "description": "Niveau du TMS de la pyramide en sortie jusqu'auquel la source sera utilisée"
+                    },
+                    "tippecanoe_options": {
+                        "type": "string",
+                        "description": "Options tippecanoe utilisées",
+                        "default": ""
                     },
                     "source": {
                         "oneOf": [{
                             "type": "object",
-                            "description": "Service WMS comme source de données",
-                            "required": ["type", "layers", "url", "area"],
+                            "description": "Base PostgreSQL comme source de données",
+                            "required": ["type", "tables", "db", "area", "srs"],
                             "properties": {
                                 "type": {
                                     "type": "string",
                                     "description": "Type de source",
-                                    "enum": ["WMS"]
+                                    "enum": ["POSTGRESQL"]
+                                },
+                                "srs": {
+                                    "type": "string",
+                                    "description": "Système de coordonnées des données en base"
                                 },
                                 "area": {
                                     "oneOf": [{
                                         "type": "object",
                                         "description": "Zone de moissonnage définie par un rectangle englobant",
-                                        "required": ["srs", "bbox"],
+                                        "required": ["bbox"],
                                         "properties": {
-                                            "srs": {
-                                                "type": "string",
-                                                "description": "Système de coordonnées du rectangle englobant"
-                                            },
                                             "bbox": {
                                                 "type": "array",
-                                                "description": "Coordonnées des coins, dans l'ordre xmin, ymin, xmax, ymax",
+                                                "description": "Coordonnées des coins, dans l'ordre xmin, ymin, xmax, ymax, dans le système des données en base",
                                                 "items": {
                                                     "type": "number"
                                                 },
@@ -85,15 +90,11 @@
                                     }, {
                                         "type": "object",
                                         "description": "Zone de moissonnage définie par une géométrie complexe",
-                                        "required": ["srs", "geometry"],
+                                        "required": ["geometry"],
                                         "properties": {
-                                            "srs": {
-                                                "type": "string",
-                                                "description": "Système de coordonnées du rectangle englobant"
-                                            },
                                             "geometry": {
                                                 "type": "string",
-                                                "description": "Fichier contenant une géométrie, en WKT, GeoJSON ou GML"
+                                                "description": "Fichier contenant une géométrie, en WKT, GeoJSON ou GML, dans le système des données en base"
                                             }
                                         }
                                     }, {
@@ -108,46 +109,70 @@
                                         }
                                     }]
                                 },
-                                "layers": {
-                                    "type": "string",
-                                    "description": "Couche(s) à moissonner (séparées par des virgules)"
+                                "db": {
+                                    "type": "object",
+                                    "description": "Paramètres de connexion à la base de données",
+                                    "required": ["user", "password", "database", "host"],
+                                    "properties": {
+                                        "user": {
+                                            "type": "string",
+                                            "description": "Utilisateur sur le serveur"
+                                        },
+                                        "password": {
+                                            "type": "string",
+                                            "description": "Mot de passe de l'utilisateur"
+                                        },
+                                        "port": {
+                                            "type": "integer",
+                                            "description": "Port du serveur",
+                                            "minimum": 0,
+                                            "default": 5432
+                                        },
+                                        "database": {
+                                            "type": "string",
+                                            "description": "Nom de la base de données"
+                                        },
+                                        "host": {
+                                            "type": "string",
+                                            "description": "Hôte du serveur"
+                                        }
+                                    }
                                 },
-                                "format": {
-                                    "type": "string",
-                                    "description": "Format des images téléchargées",
-                                    "enum": [
-                                        "image/png",
-                                        "image/tiff",
-                                        "image/jpeg",
-                                        "image/x-bil;bits=32",
-                                        "image/tiff&format_options=compression:deflate",
-                                        "image/tiff&format_options=compression:lzw",
-                                        "image/tiff&format_options=compression:packbits",
-                                        "image/tiff&format_options=compression:raw"
-                                    ],
-                                    "default": "image/jpeg"
-                                },
-                                "url": {
-                                    "type": "string",
-                                    "description": "URL du service WMS, avec le protocole et le chemin"
-                                },
-                                "query_parameters": {
-                                    "type": "string",
-                                    "description": "Paramètres de requête hors layers, bbox et srs"
-                                },
-                                "max_pixel_size": {
+                                "tables": {
                                     "type": "array",
-                                    "description": "Taille maximale d'image moissonnée en pixels, dans le sens de la largeur puis de la hauteur",
+                                    "description": "Tables à exporter dans les tuiles vectorielles",
                                     "items": {
-                                        "type": "integer",
-                                        "minimum": 1
+                                        "type": "object",
+                                        "required": ["native_name"],
+                                        "properties": {
+                                            "schema": {
+                                                "type": "string",
+                                                "description": "Nom du schéma contenant la table",
+                                                "default": "public"
+                                            },
+                                            "native_name": {
+                                                "type": "string",
+                                                "description": "Nom de la table en base"
+                                            },
+                                            "final_name": {
+                                                "type": "string",
+                                                "description": "Nom de la couche correspondante dans la tuile vectorielle (égal au nom natif par défaut)"
+                                            },
+                                            "attributes": {
+                                                "type": "array",
+                                                "description": "Liste des attributs à exporter dans la tuile vectorielle, peut être '*'",
+                                                "items": {
+                                                    "type": "string"
+                                                },
+                                                "default": []
+                                            },
+                                            "filter": {
+                                                "type": "string",
+                                                "description": "Filtrage des données à exporter dans la tuile vectorielle (au format d'une clause WHERE)"
+                                            }
+                                        }
                                     },
-                                    "minItems": 2,
-                                    "maxItems": 2
-                                },
-                                "min_bytes_size": {
-                                    "type": "integer",
-                                    "minimum": 0
+                                    "minItems": 1
                                 }
                             }
                         }]

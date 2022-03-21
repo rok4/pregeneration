@@ -50,7 +50,7 @@ use POSIX qw(locale_h);
 use Getopt::Long;
 
 use Data::Dumper;
-local $Data::Dumper::Maxdepth = 2;
+#local $Data::Dumper::Maxdepth = 2;
 
 use File::Basename;
 use File::Spec;

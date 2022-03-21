@@ -47,95 +47,16 @@ Manage a data source, physical (image files) or virtual (WMS server) or both.
 Using:
     (start code)
     use ROK4::PREGENERATION::Source;
-
-    # DataSource object creation : 4 cases (3 raster and 1 vector)
-
-    # RASTER
-    # An image directory as source
-    my $objDataSource = ROK4::PREGENERATION::Source->new(
-        "19",
-        {
-            srs => "IGNF:LAMB93",
-            path_image => "/home/ign/DATA/BDORTHO"
-        }
-    );
-
-    # A WMS service as source, with an extent to harvest
-    my $objDataSource = ROK4::PREGENERATION::Source->new(
-        "19",
-        {
-            srs => IGNF:WGS84G,
-            extent => /home/ign/SHAPE/WKTPolygon.txt,
-
-            wms_layer   => "tp:TRONCON_ROUTE",
-            wms_url => "http://geoportail/wms/",
-            wms_version => "1.3.0",
-            wms_request => "getMap",
-            wms_format  => "image/png",
-            wms_bgcolor => "0xFFFFFF",
-            wms_transparent  => "FALSE",
-            wms_style  => "line",
-            min_size => 9560,
-            max_width => 1024,
-            max_height => 1024
-        }
-    );
-    
-    # A WMS service as source, with the list of slab to harvest
-    my $objDataSource = ROK4::PREGENERATION::Source->new(
-        "19",
-        {
-            srs => IGNF:WGS84G,
-            list => /home/ign/listIJ.txt,
-
-            wms_layer   => "tp:TRONCON_ROUTE",
-            wms_url => "http://geoportail/wms/",
-            wms_version => "1.3.0",
-            wms_request => "getMap",
-            wms_format  => "image/png",
-            wms_bgcolor => "0xFFFFFF",
-            wms_transparent  => "FALSE",
-            wms_style  => "line",
-            min_size => 9560,
-            max_width => 1024,
-            max_height => 1024
-        }
-    );
-    
-    # VECTOR
-    # A database source, with the extent to harvest
-    my $objDataSource = ROK4::PREGENERATION::Source->new(
-        "19",
-        {
-           "srs" => "EPSG:3857",
-           "tables" => [
-              {
-                 "schema" => "limites_administratives",
-                 "native_name" => "region",
-                 "final_name" => "limites",
-                 "attributes" => "*"
-              }
-           ],
-           "db" => {
-              "user" => "ign",
-              "port" => "5432",
-              "password" => "pw",
-              "database" => "ign",
-              "host" => "postgis.ign.fr"
-           },
-           "extent" => "/home/ign/FXX.wkt"
-        }
-    );
     (end code)
 
 Attributes:
     bottomID - string - Level identifiant, from which data source is used (base level).
     bottomOrder - integer - Level order, from which data source is used (base level).
-    topID - string - Level identifiant, to which data source is used. It is calculated in relation to other datasource.
-    topOrder - integer - Level order, to which data source is used. It is calculated in relation to other datasource.
+    topID - string - Level identifiant, to which data source is used.
+    topOrder - integer - Level order, to which data source is used.
 
-    srs - string - SRS of the bottom extent (and ImageSource objects if exists).
-    extent - <OGR::Geometry> - Precise extent, in the previous SRS (can be a bbox). It is calculated from the <ImageSource> or supplied in configuration file. 'extent' is mandatory (a bbox or a file which contains a WKT geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
+    srs - string - SRS of the bottom extent (and SourceImage objects if exists).
+    extent - <OGR::Geometry> - Precise extent, in the previous SRS (can be a bbox). It is calculated from the <SourceImage> or supplied in configuration file. 'extent' is mandatory (a bbox or a file which contains a WKT geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
     list - string - File path, containing a list of image indices (I,J) to harvest.
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
 
@@ -268,9 +189,8 @@ sub _load {
             ERROR("Cannot load a POSTGRESQL source");
             return FALSE;
         }
-        if (exists $params->{source}->{area}->{srs}) {
-            $this->{srs} = $params->{source}->{area}->{srs};
-        }
+        $this->{srs} = $params->{source}->{srs};
+            
         if (exists $params->{source}->{area}->{bbox}) {
             $this->{bbox} = $params->{source}->{area}->{bbox};
         }

@@ -536,7 +536,7 @@ sub identifyAboveNodes {
 
         # pyramid's limits update : we store data's limits in the pyramid's levels
         $this->{pyramid}->updateTMLimits($levelID, @{$this->{bbox}});
-        DEBUG(sprintf "Number of cache images by level (%s) : %d", $levelID, scalar keys(%{$this->{nodes}{$levelID}}));
+        DEBUG(sprintf "Number of slab(s) by level (%s) : %d", $levelID, scalar keys(%{$this->{nodes}{$levelID}}));
 
         if ($i == $src->getTopOrder()) { last; }
 

@@ -328,7 +328,7 @@ Function: makeJsons
 Parameters (list):
     datasource - <ROK4::PREGENERATION::Source> - To use to extract vector data.
 
-Code exmaple:
+Code example:
     (start code)
     MakeJson "273950.309374068154368 6203017.719398627074048 293518.188615073275904 6222585.598639632195584" "host=postgis.ign.fr dbname=bdtopo user=ign password=PWD port=5432" "SELECT geometry FROM bdtopo_2018.roads WHERE type='highway'" roads
     (end code)
@@ -340,7 +340,8 @@ sub makeJsons {
     my $this = shift;
     my $datasource = shift;
 
-    my ($dburl, $srcSrs) = $datasource->getSourceDatabase()->getSourceDatabaseInfos();
+    my $dburl = $datasource->getSourceDatabase()->getSourceDatabaseInfos();
+    my $srcSrs = $datasource->getSRS();
 
     my @tables = $datasource->getSourceDatabase()->getSqlExports();
 
