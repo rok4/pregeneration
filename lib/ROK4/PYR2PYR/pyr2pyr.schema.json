@@ -1,0 +1,122 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "title": "PYR2PYR pregeneration configuration",
+    "type": "object",
+    "required": [
+        "to",
+        "from",
+        "process"
+    ],
+    "properties": {
+        "logger": {
+            "type": "object",
+            "description": "Paramètres du logger",
+            "properties": {
+                "layout": {
+                    "type": "string",
+                    "description": "Format du log, selon la syntaxe Log4perl",
+                    "default": "%5p : %m (%M) %n"
+                },
+                "file": {
+                    "type": "string",
+                    "description": "Chemin vers le fichier où écrire les logs. Les logs sont dans la sortie standard si ce paramètre n'est pas fourni"
+                },
+                "level": {
+                    "type": "string",
+                    "description": "Niveau de log",
+                    "enum": [
+                        "DEBUG",
+                        "INFO",
+                        "WARN",
+                        "ERROR",
+                        "ALWAYS"
+                    ],
+                    "default": "WARN"
+                }
+            }
+        },
+        "from": {
+            "type": "object",
+            "description": "Pyramide à recopier",
+            "required": ["descriptor"],
+            "properties": {
+                "descriptor": {
+                    "type": "string",
+                    "description": "Chemin vers le descripteur de la pyramide à recopier"
+                }
+            }
+        },
+        "to": {
+            "type": "object",
+            "description": "Pyramide à créer",
+            "required": ["name", "storage"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Nom de la pyramide en sortie"
+                },
+                "storage": {
+                    "type": "object",
+                    "required": ["type", "root"],
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": "Type de stockage",
+                            "enum": [
+                                "FILE", "S3", "CEPH", "SWIFT"
+                            ]
+                        },
+                        "root": {
+                            "type": "string",
+                            "description": "Racine de stockage : un dossier pour le type FILE, le nom du pool en CEPH, le nom du bucket en S3 et le nom du container en SWIFT"
+                        },
+                        "depth": {
+                            "type": "integer",
+                            "description": "Profondeur d'arborescence, uniquement dans le cas d'un stockage FILE",
+                            "minimum": 1,
+                            "default": 2
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "process": {
+        "type": "object",
+        "description": "Paramètres de traitement",
+        "required": ["directories", "parallelization"],
+        "properties": {
+            "directories": {
+                "type": "object",
+                "description": "Dossiers de génération",
+                "required": ["scripts", "local_tmp", "shared_tmp"],
+                "properties": {
+                    "local_tmp": {
+                        "type": "string",
+                        "description": "Dossier temporaire de génération individuel de chaque script de génération"
+                    },
+                    "shared_tmp": {
+                        "type": "string",
+                        "description": "Dossier temporaire de génération partagé entre les scripts de prégénération et génération"
+                    }
+                }
+            },
+            "parallelization": {
+                "type": "integer",
+                "description": "Niveau de parallélisation, défini le nombre de scripts de génération exécutables en parallèle",
+                "minimum": 1
+            },
+            "follow_links": {
+                "type": "boolean",
+                "description": "Doit-on suivre les liens symboliques lors de la copie",
+                "default": false
+            },
+            "slab_limit": {
+                "type": "integer",
+                "description": "Taille de dalle sous laquelle on ne recopie pas",
+                "minimum": 0,
+                "default": 0
+            }
+        }
+    }
+}

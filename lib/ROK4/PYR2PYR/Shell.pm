@@ -66,7 +66,6 @@ use Data::Dumper;
 
 use ROK4::Core::Shell;
 
-
 ################################################################################
 # Constantes
 use constant TRUE  => 1;
@@ -88,13 +87,16 @@ Function: setGlobals
 Define and create common working directories
 =cut
 sub setGlobals {
-    $PARALLELIZATIONLEVEL = shift;
-    $PERSONNALTEMPDIR = shift;
-    $COMMONTEMPDIR = shift;
-    $SCRIPTSDIR = shift;
-    $SLABLIMIT = shift;
+    my $params = shift;
 
-    $COMMONTEMPDIR = File::Spec->catdir($COMMONTEMPDIR);
+    $SLABLIMIT = 0;
+    if (defined $params->{slab_limit}) {
+        $SLABLIMIT = $params->{slab_limit};
+    }
+    $PARALLELIZATIONLEVEL = $params->{parallelization};
+    $PERSONNALTEMPDIR = File::Spec->rel2abs($params->{directories}->{local_tmp});
+    $COMMONTEMPDIR = File::Spec->rel2abs($params->{directories}->{shared_tmp});
+    $SCRIPTSDIR = File::Spec->rel2abs($params->{directories}->{scripts});
     
     # Common directory
     if (! -d $COMMONTEMPDIR) {

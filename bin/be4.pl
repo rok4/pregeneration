@@ -126,7 +126,7 @@ my %this =
         forest => undef,
         update_mode => undef,
         sources => []
-    },
+    }
 );
 
 ####################################################################################################
@@ -239,9 +239,6 @@ sub init {
 Function: config
 
 Loads properties files and validate using <ROK4::BE4::Validator::validate>.
-
-See Also:
-    <checkParams>
 =cut
 sub config {
 

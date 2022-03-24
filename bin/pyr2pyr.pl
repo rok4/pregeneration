@@ -63,7 +63,7 @@ use lib "$Bin/../lib/perl5";
 # My home-made modules
 use ROK4::Core::Base36;
 
-use ROK4::PYR2PYR::PropertiesLoader;
+use ROK4::PYR2PYR::Validator;
 use ROK4::PYR2PYR::Shell;
 
 use ROK4::Core::PyramidRaster;
@@ -87,8 +87,8 @@ my %options =
     "help"       => 0,
     "usage"      => 0,
 
-    # Mandatory
-    "conf"  => undef,
+    # Configuration
+    "properties"  => undef, # file properties params (mandatory) !
 );
 
 =begin nd
@@ -120,11 +120,10 @@ Variable: this
 All parameters by section
 =cut
 my %this = (
-    params => {
-        logger => undef,
-        from => undef,
-        to => undef,
-        process => undef
+    params => undef,
+    loaded => {
+        input_pyramid => undef,
+        output_pyramid => undef
     }
 );
 
@@ -192,19 +191,20 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "pyr2pyr.pl --conf <FILE>\n";
+            printf "See documentation here: https://github.com/rok4/pregeneration\n" ;
             exit 0;
         },
+        "version|v" => sub { exit 0; },
         "usage" => sub {
-            printf "pyr2pyr.pl --conf <FILE>\n";
+            printf "See documentation here: https://github.com/rok4/pregeneration\n" ;
             exit 0;
         },
         
-        "conf=s" => \$options{conf}
+        "properties|conf=s" => \$options{properties}
 
     ) or do {
         printf "Unappropriate usage\n";
-        printf "pyr2pyr.pl --conf <FILE>\n";
+        printf "See documentation here: https://github.com/rok4/pregeneration\n";
         exit -1;
     };
     
@@ -214,19 +214,16 @@ sub init {
         layout => '%5p : %m (%M) %n'
     });
 
-    ############# conf
-    if (! defined $options{conf} || $options{conf} eq "") {
-        ERROR("Option 'conf' not defined !");
+    # We make path absolute
+
+    # properties : mandatory !
+    if (! defined $options{properties} || $options{properties} eq "") {
+        ERROR("Option 'properties' not defined !");
         return FALSE;
     }
-
-    $options{conf} = File::Spec->rel2abs($options{conf});
-
-    if (! -f $options{conf}) {
-        ERROR(sprintf "configuration file does not exist : %s", $options{conf});
-        return FALSE;
-    }
-
+    my $fproperties = File::Spec->rel2abs($options{properties});
+    $options{properties} = $fproperties;
+    
     return TRUE;
 }
 
@@ -237,86 +234,53 @@ sub init {
 =begin nd
 Function: config
 
-Loads properties file.
+Loads properties files and validate using <ROK4::PYR2PYR::Validator::validate>.
 =cut
 sub config {
 
     ###################
     ALWAYS(">>> Load Properties ...");
     
-    my $objProp = ROK4::PYR2PYR::PropertiesLoader->new($options{conf});
+    $this{params} = ROK4::Core::Utils::get_hash_from_json_file($options{properties});
     
-    if (! defined $objProp) {
+    if (! defined $this{params}) {
         ERROR("Can not load properties !");
         return FALSE;
     }
-  
-    # save params properties
-    $this{params} = $objProp->getAllProperties();
-
-    # logger
-    my $logger = $this{params}->{logger};
-    if (defined $logger) {
     
-        my @args;
+    ###################
+    # check parameters
+    
+    if (! ROK4::PYR2PYR::Validator::validate($this{params})) {
+        ERROR("Invalid configuration");
+        return FALSE;
+    }
+
+    my $logger = $this{params}->{logger};
+    
+    # logger
+    if (defined $logger) {
         
-        my $layout= '%5p : %m (%M) %n';
-        my $level = $logger->{log_level};
-        my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
-            if (! ROK4::Core::Utils::isEmpty($logger->{log_path}) && ! ROK4::Core::Utils::isEmpty($logger->{log_file}));
-        
-        $out   = "STDOUT" if (! defined $out);
-        $level = "WARN"   if (! defined $level);
-        
-        if ($level =~ /(ALL|DEBUG)/) {
-            $layout = '%5p : %m (%M) %n';
+        my $layout = '%5p : %m (%M) %n';
+        if (defined $logger->{layout}) {
+            $layout = $logger->{layout};
         }
-        
-        # add the param logger by default (user settings !)
-        push @args, {
+
+        my $level = "WARN";
+        if (defined $logger->{level}) {
+            $level = $logger->{level};
+        }
+
+        my $out = "STDOUT";
+        if (defined $logger->{file}) {
+            $out = ">>".$logger->{file};
+        }
+
+        Log::Log4perl->easy_init({
             file   => $out,
             level  => $level,
             layout => $layout,
-        };
-        
-        if ($out ne "STDOUT") {
-            # add the param logger to the STDOUT
-            push @args, {
-                file   => "STDOUT",
-                level  => $level,
-                layout => $layout,
-            },
-        }
-        Log::Log4perl->easy_init(@args);
-    }
-
-    # Follow links ?
-    if ( exists $this{params}->{from}->{follow_links} && defined $this{params}->{from}->{follow_links} && uc($this{params}->{from}->{follow_links}) eq "FALSE") {
-        INFO("Links will NOT be followed");
-        $this{params}->{from}->{follow_links} = FALSE;
-    } else {
-        INFO("Links will be followed");
-        $this{params}->{from}->{follow_links} = TRUE;
-    }
-
-    # Slab size filter ?
-    if (exists($this{params}->{process}->{slab_limit}) && defined ($this{params}->{process}->{slab_limit})) {
-        if (! ROK4::Core::Utils::isPositiveInt($this{params}->{process}->{slab_limit})) {
-            ERROR("If 'process.slab_limit' is given, it must be positive.");
-            return FALSE;
-        }
-    } else {
-        $this{params}->{process}->{slab_limit} = 0;
-    }
-
-    # Parallelization level
-    if (exists($this{params}->{process}->{job_number}) && defined ($this{params}->{process}->{job_number})) {
-        if (! ROK4::Core::Utils::isStrictPositiveInt($this{params}->{process}->{job_number})) {
-            ERROR("If 'process.job_number' is given, it must be stricly positive.");
-            return FALSE;
-        }
-    } else {
-        $this{params}->{process}->{job_number} = 1;
+        });
     }
     
     return TRUE;
@@ -326,62 +290,50 @@ sub doIt {
 
     ############################## LA PYRAMIDE EN ENTRÉE
 
-    my $pyramidFrom = ROK4::Core::ProxyPyramid::load($this{params}->{from}->{pyr_desc_path});
+    $this{loaded}->{input_pyramid} = ROK4::Core::ProxyPyramid::load($this{params}->{from}->{descriptor});
 
-    if (! defined $pyramidFrom) {
+    if (! defined $this{loaded}->{input_pyramid}) {
         ERROR("Cannot load the source Pyramid object (neither raster nor vector)");
         return FALSE;
     }
 
-    my $pyramidFromName = $pyramidFrom->getName();
-
     ############################## LA PYRAMIDE EN SORTIE
 
-    # On part d'un clone de la pyramide en entrée
-    my $pyramidTo = $pyramidFrom->clone();
-
-    $pyramidTo->updateStorageInfos($this{params}->{to});
-
-    # Environment variables nécessaire au stockage
-
-    if (! ROK4::Core::ProxyStorage::checkEnvironmentVariables($pyramidTo->getStorageType())) {
-        ERROR(sprintf "Environment variable is missing for a %s storage", $pyramidTo->getStorageType());
-        return FALSE;
-    }    
+    # On part d'un clone de la pyramide en entrée, en changeant le nom puis le stockage
+    $this{loaded}->{output_pyramid} = $this{loaded}->{input_pyramid}->clone($this{params}->{to}->{name});
+    $this{loaded}->{output_pyramid}->updateStorageInfos($this{params}->{to}->{storage});
 
     ############################## LA CONVERSION EST ELLE GÉRÉE
 
 
-    if (! exists $HANDLEDCONVERSION{$pyramidFrom->getStorageType()}->{$pyramidTo->getStorageType()}) {
-        ERROR(sprintf "PYR2PYR %s -> %s not available", $pyramidFrom->getStorageType(), $pyramidTo->getStorageType());
+    if (! exists $HANDLEDCONVERSION{$this{loaded}->{input_pyramid}->getStorageType()}->{$this{loaded}->{output_pyramid}->getStorageType()}) {
+        ERROR(sprintf "PYR2PYR %s -> %s not available", $this{loaded}->{input_pyramid}->getStorageType(), $this{loaded}->{output_pyramid}->getStorageType());
         return FALSE;
     }
 
-    if (! $pyramidTo->writeDescriptor()) {
+    if (! $this{loaded}->{output_pyramid}->writeDescriptor()) {
         ERROR("Cannot write output pyramid descriptor");
         return FALSE;
     }
 
     ############################## LES COMMANDES SHELL
 
-    if (! ROK4::PYR2PYR::Shell::setGlobals(
-            $this{params}->{process}->{job_number},
-            $this{params}->{process}->{path_temp},
-            $this{params}->{process}->{path_temp_common},
-            $this{params}->{process}->{path_shell},
-            $this{params}->{process}->{slab_limit}
-        )
-    ) {
+    if (! ROK4::PYR2PYR::Shell::setGlobals($this{params}->{process})) {
         ERROR ("Impossible d'initialiser la librairie des commandes Shell pour PYR2PYR");
         return FALSE;
     }
-    my $scriptInit = ROK4::PYR2PYR::Shell::getScriptInitialization($pyramidFrom, $pyramidTo);
+    my $scriptInit = ROK4::PYR2PYR::Shell::getScriptInitialization($this{loaded}->{input_pyramid}, $this{loaded}->{output_pyramid});
+
+    my $follow_links = FALSE;
+    if (defined $this{params}->{process}->{follow_links} && $this{params}->{process}->{follow_links}) {
+        $follow_links = TRUE;
+    }
 
     ############################## LES SCRIPTS
 
     my @scripts;
     my $scriptInd = 0;
-    for (my $i = 1 ; $i <= $this{params}->{process}->{job_number}; $i++) {
+    for (my $i = 1 ; $i <= $this{params}->{process}->{parallelization}; $i++) {
 
         my $s = ROK4::PREGENERATION::Script->new({
             id => "SCRIPT_$i",
@@ -415,12 +367,12 @@ sub doIt {
 
     ############################## TRAITEMENT DES DALLES
 
-    if (! $pyramidFrom->loadList()) {
+    if (! $this{loaded}->{input_pyramid}->loadList()) {
         ERROR("Cannot cache content list of the source pyramid");
         return FALSE;
     }
 
-    my $slabs = $pyramidFrom->getLevelsSlabs();
+    my $slabs = $this{loaded}->{input_pyramid}->getLevelsSlabs();
 
     ### Calcul du nombre d'image à traiter
     my $total = 0;
@@ -431,16 +383,16 @@ sub doIt {
 
     INFO("$total slab(s) to process");
 
-    my $totalImagesPerScript = int($total/$this{params}->{process}->{job_number});
+    my $totalImagesPerScript = int($total/$this{params}->{process}->{parallelization});
     INFO("$totalImagesPerScript slab(s) per script to process");
 
-    my $dataRootFrom = $pyramidFrom->getDataRoot();
-    my $storageTypeFrom = $pyramidFrom->getStorageType();
+    my $dataRootFrom = $this{loaded}->{input_pyramid}->getDataRoot();
+    my $storageTypeFrom = $this{loaded}->{input_pyramid}->getStorageType();
     foreach my $type ("DATA", "MASK") {
         foreach my $level (keys(%{$slabs})) {
             while( my ($key, $parts) = each(%{$slabs->{$level}->{$type}}) ) {
 
-                if (! $this{params}->{from}->{follow_links} && $parts->{root} ne $dataRootFrom) {
+                if (! $follow_links && $parts->{root} ne $dataRootFrom) {
                     # C'est un lien symbolique dans la pyramide et nous n'en voulons pas
                     next;
                 }
@@ -466,17 +418,17 @@ sub doIt {
                     $input = sprintf "%s/%s", join("/", @p);
                 }
 
-                my $output = $pyramidTo->getSlabPath($type, $level, $col, $row, FALSE);
+                my $output = $this{loaded}->{output_pyramid}->getSlabPath($type, $level, $col, $row, FALSE);
 
                 $scripts[$scriptInd]->write(sprintf "ProcessSlab $input $output\n");
-                $scriptInd = ($scriptInd + 1) % $this{params}->{process}->{job_number};
+                $scriptInd = ($scriptInd + 1) % $this{params}->{process}->{parallelization};
             }
         }
     }
 
     ############################## ÉCRITURE DE L'EN TÊTE DE LISTE DANS LE FINISHER
 
-    my $root = $pyramidTo->getDataRoot();
+    my $root = $this{loaded}->{output_pyramid}->getDataRoot();
     $scripts[-1]->write("echo '0=$root\n#' >\${LIST_FILE}\n");
 
     ############################## FERMETURE DES SCRIPTS
@@ -488,7 +440,7 @@ sub doIt {
     ############################## SCRIPT PRINCIPAL
 
     ALWAYS(">>> Write main script");
-    my $scriptPath = File::Spec->catfile($this{params}->{process}->{path_shell}, "main.sh");
+    my $scriptPath = File::Spec->catfile($ROK4::PYR2PYR::Shell::SCRIPTSDIR, "main.sh");
     open(MAIN, ">$scriptPath") or do {
         ERROR("Cannot open '$scriptPath' to write in it");
         return FALSE;
