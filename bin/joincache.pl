@@ -69,11 +69,12 @@ use ROK4::Core::TileMatrix;
 use ROK4::Core::PyramidRaster;
 use ROK4::Core::LevelRaster;
 use ROK4::PREGENERATION::Script;
+use ROK4::PREGENERATION::Source;
 use ROK4::Core::ProxyGDAL;
 
 use ROK4::JOINCACHE::Node;
 use ROK4::JOINCACHE::Shell;
-use ROK4::JOINCACHE::PropertiesLoader;
+use ROK4::JOINCACHE::Validator;
 
 
 ################################################################################
@@ -115,41 +116,24 @@ my %options =
 =begin nd
 Variable: this
 
-Informations are treated, interpreted and store in this hash, using JOINCACHE classes :
-
-    propertiesLoader - <ROK4::JOINCACHE::PropertiesLoader> - Contains all raw informations
-    pyramid - <ROK4::Core::PyramidRaster> - Output pyramid
-    mergeMethod - string - Method to use merge slabs when several sources
-    useMasks - boolean - do we use masks to generate slabs
-    scripts - <ROK4::PREGENERATION::Script> array - Split scripts to use to generate slabs to merge
-    currentScript - integer - Script index to use for the next task (round robin share)
-    composition - hash - Defines source pyramids for each level, extent, and order
-|       level_id => [
-|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]], pyr => ROK4::Core::PyramidRaster}
-|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]], pyr => ROK4::Core::PyramidRaster}
-|       ]
-    listStream - file stream - Open file stream to write the new pyramid list
-    roots - hash - Used source pyramids roots (for the list)
-    doneSlabs - boolean hash - To memorize already done tiles, we use this hash, containing "I_J => TRUE".
+Informations are treated, interpreted and store in this hash
 =cut
 my %this =
 (
-    propertiesLoader => undef,
-
-    pyramid => undef,
-
-    mergeMethod => undef,
-    useMasks => undef,
-    scripts => [],
-    jobsNumber => undef,
-    currentScript => undef,
-
-    composition => undef,
-
-    listStream => undef,
-    roots => {},
-
-    doneSlabs => {}
+    params => undef,
+    loaded => {
+        output_pyramid => undef,
+        merge_method => undef,
+        sources => [],
+        levels => { }
+    },
+    work => {
+        list_stream => undef,
+        current_script => undef,
+        roots => {},
+        scripts => [],
+        done_slabs => {}
+    },
 );
 
 ####################################################################################################
@@ -184,9 +168,9 @@ sub main {
     }
 
     # execution
-    ALWAYS("> Validation");
-    if (! main::validate()) {
-        print STDERR "ERROR VALIDATION !\n";
+    ALWAYS("> Loading");
+    if (! main::load()) {
+        print STDERR "ERROR LOADING !\n";
         exit 3;
     }
 
@@ -263,111 +247,216 @@ sub init {
 =begin nd
 Function: config
 
-Load all parameters from the configuration file, using <ROK4::JOINCACHE::PropertiesLoader>.
+Load all parameters from the configuration file, and validate using <ROK4::JOINCACHE::Validator::validate>.
 
 See Also:
     <checkParams>
 =cut
 sub config {
-
-    ALWAYS(">>> Load Properties ...");
-
-    my $objProp = ROK4::JOINCACHE::PropertiesLoader->new($options{properties});
     
-    if (! defined $objProp) {
-        FATAL("Can not load specific properties !");
+    $this{params} = ROK4::Core::Utils::get_hash_from_json_file($options{properties});
+    
+    if (! defined $this{params}) {
+        ERROR("Can not load properties !");
+        return FALSE;
+    }
+    
+    ###################
+    # check parameters
+    
+    if (! ROK4::JOINCACHE::Validator::validate($this{params})) {
+        ERROR("Invalid configuration");
         return FALSE;
     }
 
-    $this{propertiesLoader} = $objProp;
-
-    ###################
-
-    my $logger = $this{propertiesLoader}->getLoggerSection();
+    my $logger = $this{params}->{logger};
     
     # logger
     if (defined $logger) {
-        my @args;
-
-        my $layout= '%5p : %m (%M) %n';
-        my $level = $logger->{log_level};
-
-        my $out   = "STDOUT";
-        $level = "WARN"   if (! defined $level);
-
-        if ($level =~ /(ALL|DEBUG)/) {
-            $layout = '%5p : %m (%M) %n';
+        
+        my $layout = '%5p : %m (%M) %n';
+        if (defined $logger->{layout}) {
+            $layout = $logger->{layout};
         }
 
-        # add the param logger by default (user settings !)
-        push @args, {
+        my $level = "WARN";
+        if (defined $logger->{level}) {
+            $level = $logger->{level};
+        }
+
+        my $out = "STDOUT";
+        if (defined $logger->{file}) {
+            $out = ">>".$logger->{file};
+        }
+
+        Log::Log4perl->easy_init({
             file   => $out,
             level  => $level,
             layout => $layout,
-        };
-
-        Log::Log4perl->easy_init(@args);
+        });
     }
-
+    
     return TRUE;
 }
 
-####################################################################################################
-#                                 Group: Validation methods                                        #
-####################################################################################################
-
 =begin nd
-Function: validate
+Function: load
 
-Validates all components, checks consistency and create scripts. Use classes <ROK4::Core::PyramidRaster>, <ROK4::PREGENERATION::Script>
-
-See Also:
-    <validateSourcePyramids>
+Load and validate all components, checks consistency and create scripts.
 =cut
-sub validate {
+sub load {
 
-    ##################
+    ####################### LOAD SOURCES
 
-    ALWAYS(">>> Create the output ROK4::Core::PyramidRaster object ...");
+    ALWAYS(">>> Load data sources...");
 
-    my $pyramidSection = $this{propertiesLoader}->getPyramidSection();
+    my $datasources = $this{params}->{datasources};
 
-    my $objPyramid = ROK4::Core::PyramidRaster->new("VALUES", $pyramidSection);
+    my $refPyramid = undef;
+    foreach my $ds (@{$datasources}) {
+        my $objSource = ROK4::PREGENERATION::Source->new($ds);
+        if (! defined $objSource) {
+            ERROR("Cannot load one PYRAMIDS data source");
+            return FALSE;
+        }
+        my $sourceType = $objSource->getType();
+        if ($sourceType ne "PYRAMIDS") {
+            ERROR("JOINCACHE generation accept only PYRAMIDS sources");
+            return FALSE;
+        }
+        push(@{$this{loaded}->{sources}}, $objSource);
 
-    if (! defined $objPyramid) {
-        ERROR ("Cannot create the ROK4::Core::PyramidRaster object for the output pyramid !");
+        if (! defined $refPyramid) {
+            $refPyramid = $objSource->getSourcePyramid()->getPyramids()->[0];
+        } elsif ($refPyramid->checkCompatibility($objSource->getSourcePyramid()->[0]) == 0) {
+            ERROR("Different PYRAMIDS sources have to be consistent");
+            return FALSE;
+        }
+    }
+
+    # On regarde si on peut extraire un seul type de pixel, ce qui permet de ne pas fournir celui de la pyramide en sortie
+    # Cela implique
+    my $inputPixel = undef;
+    foreach my $s (@{$this{loaded}->{sources}}) {
+        if (! defined $s->getPixel()) {
+            # Deux pyramides de la source n'ont déjà pas les mếme caractéristiques
+            INFO("All source pyramids does not own the same pixel informations, we have to provide the output pixel");
+            last;
+        }
+        if (! defined $inputPixel) {
+            $inputPixel = $s->getPixel();
+        } elsif (! $inputPixel->equals($s->getPixel())) {
+            INFO("All source pyramids does not own the same pixel informations, we have to provide the output pixel");
+            last;
+        }
+    }
+
+    ####################### LOAD OUTPUT
+
+    ALWAYS(">>> Load the pyramid to generate ...");
+
+    # Les caractéristiques de la pyramide en sortie sont en grande partie récupérées des pyramides en entrée
+
+    if (defined $inputPixel) {
+        if (! exists $this{params}->{pyramid}->{pixel}->{sampleformat}) {
+            $this{params}->{pyramid}->{pixel}->{sampleformat} = $inputPixel->getSampleFormatCode();
+        }
+        if (! exists $this{params}->{pyramid}->{pixel}->{samplesperpixel}) {
+            $this{params}->{pyramid}->{pixel}->{samplesperpixel} = $inputPixel->getSamplesPerPixel();
+        }
+    }
+    $this{params}->{pyramid}->{slab_size} = [$refPyramid->getTilesPerWidth(), $refPyramid->getTilesPerHeight()];
+    $this{params}->{pyramid}->{tms} = $refPyramid->getTileMatrixSet()->getName();
+    $this{params}->{pyramid}->{storage}->{type} = $refPyramid->getStorageType();
+
+    if ($this{params}->{pyramid}->{storage}->{type} eq "FILE") {
+        # Dans le cas du stockage fichier, la profondeur d'arborescence est la même que pour les sources
+        $this{params}->{pyramid}->{storage}->{depth} = $refPyramid->getDirDepth();
+    } else {
+        # Dans le cas du stockage objet, la racine de stockage est la même que pour les sources
+        $this{params}->{pyramid}->{storage}->{root} = $refPyramid->getStorageRoot();
+    }
+
+    $this{loaded}->{output_pyramid} = ROK4::Core::PyramidRaster->new("VALUES", $this{params}->{pyramid} );
+    if (! defined $this{loaded}->{output_pyramid}) {
+        ERROR("Cannot load new pyramid");
         return FALSE;
     }
 
-    # Environment variables nécessaire au stockage
-
-    if (! ROK4::Core::ProxyStorage::checkEnvironmentVariables($objPyramid->getStorageType())) {
-        ERROR(sprintf "Environment variable is missing for a %s storage", $objPyramid->getStorageType());
+    if ($this{loaded}->{output_pyramid}->checkCompatibility($refPyramid) == 0) {
+        ERROR("Output pyramid is not consistent with input pyramids");
         return FALSE;
     }
 
-    $this{pyramid} = $objPyramid;
+    ####################### MANAGE SOURCES
 
-    ################## Process
+    # On va réorganiser les sources par niveaux, pour faciliter les traitements ensuite
 
-    ALWAYS(">>> Create the ROK4::PREGENERATION::Script objects ...");
+    my $tms = $this{loaded}->{output_pyramid}->getTileMatrixSet();
+    foreach my $s (@{$this{loaded}->{sources}}) {
+        my $pyramids = $s->getSourcePyramid()->getPyramids();
 
-    my $processSection = $this{propertiesLoader}->getProcessSection();
+        my $topID = $s->getTopID();
+        my $topOrder = $tms->getOrderfromID($topID);
+        $s->setTopOrder($topOrder);
 
-    $this{mergeMethod} = $processSection->{merge_method};
+        my $bottomID = $s->getBottomID();
+        my $bottomOrder = $tms->getOrderfromID($bottomID);
+        $s->setBottomOrder($bottomOrder);
 
-    if ($objPyramid->ownMasks()) {
+        for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
+            my $ID = $tms->getIDfromOrder($order);
+
+            if (! exists $this{loaded}->{levels}->{$ID}) {
+                $this{loaded}->{levels}->{$ID} = [];
+            }            
+
+            if (! $this{loaded}->{output_pyramid}->addLevel($ID) ) {
+                ERROR("Cannot add level $ID");
+                return FALSE;
+            }
+
+            for my $p (@{$pyramids}) {
+                
+                if (! $p->loadList()) {
+                    ERROR("Cannot cache content list for source pyramid " . $p->getName());
+                    return FALSE;
+                }
+
+                my $elem = {
+                    pyramid => $p,
+                    compatible => $this{loaded}->{output_pyramid}->checkCompatibility($p)
+                };
+
+                if ($s->getArea() eq "BBOX") {
+                    $elem->{bbox} = $s->getBbox();
+                }
+                elsif ($s->getArea() eq "EXTENT") {
+                    $elem->{extent} = $s->getExtent();
+                }
+
+                my @a = $p->getLevel($ID)->bboxToSlabIndices(@{$s->getBbox()});
+                $elem->{extrem_slabs} = \@a;
+
+                push( @{$this{loaded}->{levels}->{$ID}}, $elem);
+            }
+        }
+    }
+
+    ####################### LOAD SCRIPTS
+
+    if ($this{loaded}->{output_pyramid}->ownMasks()) {
         # Si on souhaite avoir des masques dans la pyramide de sortie, il faut les utiliser tout du long des calculs
-        $processSection->{use_masks} = "TRUE";
+        $this{params}->{process}->{mask} = 1;
     }
 
-    if (! ROK4::JOINCACHE::Shell::setGlobals($processSection->{job_number}, $processSection->{path_temp}, $processSection->{path_temp_common}, $processSection->{path_shell}, $processSection->{merge_method}, $processSection->{use_masks})) {
+    if (! ROK4::JOINCACHE::Shell::setGlobals($this{params}->{process})) {
         ERROR ("Impossible d'initialiser la librairie des commandes Shell pour JOINCACHE");
         return FALSE;
     }
-    my $scriptInit = ROK4::JOINCACHE::Shell::getScriptInitialization($this{pyramid});
+    my $scriptInit = ROK4::JOINCACHE::Shell::getScriptInitialization($this{loaded}->{output_pyramid});
 
-    for (my $i = 1; $i <= $processSection->{job_number}; $i++ ) {
+    for (my $i = 1; $i <= $this{params}->{process}->{parallelization}; $i++ ) {
         my $script = ROK4::PREGENERATION::Script->new({
             id => "SCRIPT_$i",
             finisher => FALSE,
@@ -380,7 +469,7 @@ sub validate {
             return FALSE;
         }
 
-        push(@{$this{scripts}}, $script);
+        push(@{$this{work}->{scripts}}, $script);
     }
 
     my $script = ROK4::PREGENERATION::Script->new({
@@ -395,60 +484,13 @@ sub validate {
         return FALSE;
     }
 
-    push(@{$this{scripts}}, $script);
+    push(@{$this{work}->{scripts}}, $script);
 
-    $this{currentScript} = 0;
-    $this{jobsNumber} = $processSection->{job_number};
-
-    ##################
-
-    ALWAYS(">>> Validate source pyramids ...");
-
-    if (! main::validateSourcePyramids($pyramidSection->{tms_path})) {
-        ERROR ("Some source pyramids are not valid !");
-        return FALSE;
-    }
-
-    ##################
-
-    $this{composition} = $this{propertiesLoader}->getCompositionSection();
+    $this{work}->{current_script} = 0;
 
     return TRUE;
 
 }
-
-=begin nd
-Function: validateSourcePyramids
-
-For each source pyramid (<ROK4::Core::PyramidRaster>), we check its compatibility with the output pyramid (<ROK4::Core::PyramidRaster::checkCompatibility>)
-=cut
-sub validateSourcePyramids {
-    my $tms_path = shift;
-
-    my $sourcePyramids = $this{propertiesLoader}->getSourcePyramids();
-
-    foreach my $sourcePyramid (values %{$sourcePyramids}) {
-
-        if ($sourcePyramid->checkCompatibility($this{pyramid}) == 0) {
-            ERROR (sprintf "Source pyramid (%s) and output pyramid are not compatible", $sourcePyramid->getName());
-            return FALSE;
-        }
-
-        if (! $sourcePyramid->loadList()) {
-            ERROR("Cannot cache content list for source pyramid " . $sourcePyramid->getName());
-            return FALSE;
-        }
-
-        INFO($sourcePyramid->getName());
-        INFO($sourcePyramid->getCachedListStats());
-    }
-
-    return TRUE;
-}
-
-####################################################################################################
-#                                 Group: Process methods                                           #
-####################################################################################################
 
 =begin nd
 Function: doIt
@@ -462,51 +504,35 @@ For each level, for each source pyramid :
     - Treat source(s) : <main::treatNode>
 
 =cut
+
 sub doIt {
 
-    ALWAYS(">>> Browse source pyramids");
-
-    my $pyramid = $this{pyramid};
-    my $TPW = $pyramid->getTilesPerWidth();
-    my $TPH = $pyramid->getTilesPerHeight();
-    my $TMS = $pyramid->getTileMatrixSet();
-
     # On stocke la racine de la pyramide de sortie avec l'index 0
-    $this{roots}->{$pyramid->getDataRoot()} = 0;
+    my $pyramid = $this{loaded}->{output_pyramid};
+    my $tms = $pyramid->getTileMatrixSet();
+    $this{work}->{roots}->{$pyramid->getDataRoot()} = 0;
 
-    my $listFile = sprintf "%s/content.list", $this{propertiesLoader}->getProcessSection()->{path_temp_common};
+    my $listFile = sprintf "%s/content.list", $ROK4::JOINCACHE::Shell::COMMONTEMPDIR;
     my $STREAM;
     if (! open $STREAM, ">", $listFile) {
         ERROR(sprintf "Cannot open output pyramid list file (write) : %s",$listFile);
         return FALSE;
     }
-    $this{listStream} = $STREAM;
+    $this{work}->{list_stream} = $STREAM;
 
-    while( my ($level,$sources) = each(%{$this{composition}}) ) {
+    while( my ($level, $sources) = each(%{$this{loaded}->{levels}}) ) {
         INFO(sprintf "Level %s",$level);
 
-        if (! $pyramid->addLevel($level)) {
-            ERROR("Cannot add level $level to output pyramid");
-            return FALSE;
-        }
-
-        my $tm = $pyramid->getTileMatrixSet()->getTileMatrix($level);
-
-        # On fait une première passe sur les sources pour calculer les indices extrêmes des dalles pour ce niveau pour l'extent de la source
-        foreach my $source (@{$sources}) {
-            my @a = $source->{pyr}->getLevel($level)->bboxToSlabIndices(@{$source->{bbox}});
-            $source->{extrem_slabs} = \@a;
-        }
+        my $tm = $tms->getTileMatrix($level);
 
         for (my $n = 0; $n < scalar(@{$sources}); $n++) {
             my $current_source = $sources->[$n];
-
-            my $slabs = $current_source->{pyr}->getLevelSlabs($level);
+            my $slabs = $current_source->{pyramid}->getLevelSlabs($level);
 
             # On parcourt toutes les dalles de données de la pyramide source courante
             while (my ($key, $parts) = each(%{$slabs->{DATA}})) {
 
-                if (exists $this{doneSlabs}->{$key}) {
+                if (exists $this{work}->{done_slabs}->{$key}) {
                     # Image already treated
                     next;
                 }
@@ -516,8 +542,8 @@ sub doIt {
                 # On vérifie que cette dalle appartient bien à l'étendue de la source
                 # Si c'est une bbox qui était fournie comme extent, on va économiser un intersect GDAL couteux
 
-                if ($current_source->{provided} eq "WKTFILE") {
-                    my @slabBBOX = $current_source->getLevel($level)->slabIndicesToBbox($COL, $ROW);
+                if (exists $current_source->{extent}) {
+                    my @slabBBOX = $current_source->{pyramid}->getLevel($level)->slabIndicesToBbox($COL, $ROW);
                     my $slabOGR = ROK4::Core::ProxyGDAL::geometryFromBbox(@slabBBOX);
 
                     if (! ROK4::Core::ProxyGDAL::isIntersected($slabOGR, $current_source->{extent})) {
@@ -541,14 +567,14 @@ sub doIt {
                 #   - si la méthode de fusion est REPLACE, on ne va pas chercher plus loin
 
                 my %sourceSlab = (
-                    img => $current_source->{pyr}->containSlab("DATA", $level, $COL, $ROW),
+                    img => $current_source->{pyramid}->containSlab("DATA", $level, $COL, $ROW),
                     msk => undef,
-                    compatible => ($pyramid->checkCompatibility($current_source->{pyr}) == 2)
+                    compatible => ($current_source->{compatible} == 2)
                 );
 
                 if ($ROK4::JOINCACHE::Shell::USEMASK) {
                     # Peut être tout de même non défini
-                    $sourceSlab{msk} = $current_source->{pyr}->containSlab("MASK", $level, $COL, $ROW);
+                    $sourceSlab{msk} = $current_source->{pyramid}->containSlab("MASK", $level, $COL, $ROW);
                 }
 
                 push(@sourceSlabs, \%sourceSlab);
@@ -560,13 +586,13 @@ sub doIt {
                         my $next_source = $sources->[$m];
 
                         # On commence par regarder si cette source suivante possède la dalle
-                        if (! defined $next_source->{pyr}->containSlab("DATA", $level, $COL, $ROW)) {
+                        if (! defined $next_source->{pyramid}->containSlab("DATA", $level, $COL, $ROW)) {
                             next;
                         }
 
                         # De même que pour la source courante, on regarde si la dalle appartient à l'étendue d'utilisation de cette source
-                        if ($next_source->{provided} eq "WKTFILE") {
-                            my @slabBBOX = $next_source->getLevel($level)->slabIndicesToBbox($COL, $ROW);
+                        if (exists $next_source->{extent}) {
+                            my @slabBBOX = $next_source->{pyramid}->getLevel($level)->slabIndicesToBbox($COL, $ROW);
                             my $slabOGR = ROK4::Core::ProxyGDAL::geometryFromBbox(@slabBBOX);
 
                             if (! ROK4::Core::ProxyGDAL::isIntersected($slabOGR, $next_source->{extent})) {
@@ -581,14 +607,14 @@ sub doIt {
                         }
 
                         my %sourceSlab = (
-                            img => $next_source->{pyr}->containSlab("DATA", $level, $COL, $ROW),
+                            img => $next_source->{pyramid}->containSlab("DATA", $level, $COL, $ROW),
                             msk => undef,
-                            compatible => ($pyramid->checkCompatibility($next_source->{pyr}) == 2)
+                            compatible => ($next_source->{compatible} == 2)
                         );
 
                         if ($ROK4::JOINCACHE::Shell::USEMASK) {
                             # Peut être tout de même non défini
-                            $sourceSlab{msk} = $next_source->{pyr}->containSlab("MASK", $level, $COL, $ROW);
+                            $sourceSlab{msk} = $next_source->{pyramid}->containSlab("MASK", $level, $COL, $ROW);
                         }
 
                         push(@sourceSlabs, \%sourceSlab);
@@ -609,18 +635,18 @@ sub doIt {
                 }
                 
                 $pyramid->getLevel($level)->updateLimitsFromSlab($COL, $ROW);
-                $this{doneSlabs}->{$key} = TRUE;
+                $this{work}->{done_slabs}->{$key} = TRUE;
             }
 
         }
 
-        delete $this{doneSlabs};
+        delete $this{work}->{done_slabs};
     }
 
-    close($this{listStream});
+    close($this{work}->{list_stream});
 
     # On ferme tous les scripts
-    foreach my $s (@{$this{scripts}}) {
+    foreach my $s (@{$this{work}->{scripts}}) {
         $s->close();
     }
 
@@ -632,13 +658,13 @@ sub doIt {
     }
 
     unshift @LIST, "#\n";
-    while( my ($root,$rootID) = each( %{$this{roots}} ) ) {
+    while( my ($root,$rootID) = each( %{$this{work}->{roots}} ) ) {
         if ($rootID == 0) {next;}
         unshift @LIST, "$rootID=$root\n";
     }
 
     # Root of the new cache (first position)
-    unshift @LIST,(sprintf "0=%s\n", $this{pyramid}->getDataRoot());
+    unshift @LIST,(sprintf "0=%s\n", $pyramid->getDataRoot());
 
     untie @LIST;
 
@@ -651,7 +677,7 @@ sub doIt {
 
     # Écrire le script principal
     ALWAYS(">>> Write main script");
-    my $scriptPath = File::Spec->catfile($this{propertiesLoader}->getProcessSection()->{path_shell}, "main.sh");
+    my $scriptPath = File::Spec->catfile($ROK4::JOINCACHE::Shell::SCRIPTSDIR, "main.sh");
     open(MAIN, ">$scriptPath") or do {
         ERROR("Cannot open '$scriptPath' to write in it");
         return FALSE;
@@ -667,12 +693,21 @@ sub doIt {
     return TRUE;
 }
 
+
+    # work => {
+    #     list_stream => undef,
+    #     current_script => undef,
+    #     roots => {},
+    #     scripts => [],
+    #     done_slabs => {}
+    # },
+
 sub treatNode {
     my $node = shift;
 
     # On affecte le script courant au noeud.
-    $node->setScript( $this{scripts}->[$this{currentScript}] );
-    $this{currentScript} = ( $this{currentScript} + 1 ) % ( $this{jobsNumber} );
+    $node->setScript( $this{work}->{scripts}->[$this{work}->{current_script}] );
+    $this{work}->{current_script} = ( $this{work}->{current_script} + 1 ) % ( $this{params}->{process}->{parallelization} );
 
     if ($node->getSourcesNumber() == 1) {
 
@@ -694,7 +729,7 @@ sub treatNode {
         }
 
         # Export éventuel du masque : il est forcément dans le bon format, on peut donc le lier.
-        if (defined $sourceImage->{msk} && $this{pyramid}->ownMasks()) {
+        if (defined $sourceImage->{msk} && $this{loaded}->{output_pyramid}->ownMasks()) {
             # We can just make a symbolic link, in a script
             $node->linkSlab($sourceImage->{msk}->[0], $sourceImage->{msk}->[1]);
             main::storeInList($sourceImage->{msk}->[0], $sourceImage->{msk}->[1]);
@@ -730,14 +765,14 @@ sub storeInList {
     my $slab = shift;
 
     my $rootID;
-    if (exists $this{roots}->{$root}) {
-        $rootID = $this{roots}->{$root};
+    if (exists $this{work}->{roots}->{$root}) {
+        $rootID = $this{work}->{roots}->{$root};
     } else {
-        $rootID = scalar (keys %{$this{roots}});
-        $this{roots}->{$root} = $rootID;
+        $rootID = scalar (keys %{$this{work}->{roots}});
+        $this{work}->{roots}->{$root} = $rootID;
     }
 
-    my $STREAM = $this{listStream};
+    my $STREAM = $this{work}->{list_stream};
     printf $STREAM "%s\n", "$rootID/$slab";
 }
 

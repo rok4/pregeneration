@@ -38,13 +38,13 @@
 =begin nd
 File: Validator.pm
 
-Class: ROK4::FOURALAMO::Validator
+Class: ROK4::JOINCACHE::Validator
 
 Using:
     (start code)
-    use ROK4::FOURALAMO::Validator;
+    use ROK4::JOINCACHE::Validator;
 
-    if (! ROK4::FOURALAMO::Validator::validate()) {
+    if (! ROK4::JOINCACHE::JOINCACHE::validate()) {
         ERROR("Misconfiguration !")
     }
     (end code)
@@ -53,7 +53,7 @@ Using:
 
 ################################################################################
 
-package ROK4::FOURALAMO::Validator;
+package ROK4::JOINCACHE::Validator;
 
 use strict;
 use warnings;
@@ -81,7 +81,7 @@ Parameters (hash):
 sub validate {
     my $configuration = shift;
 
-    my $schema = ROK4::Core::Utils::get_hash_from_json_file(dirname(__FILE__)."/4alamo.schema.json");
+    my $schema = ROK4::Core::Utils::get_hash_from_json_file(dirname(__FILE__)."/joincache.schema.json");
     if (! defined $schema) {
         ERROR("Cannot load JSON schema file");
         return FALSE;

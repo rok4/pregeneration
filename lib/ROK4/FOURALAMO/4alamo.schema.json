@@ -40,7 +40,6 @@
             "description": "Sources de données",
             "items": {
                 "type": "object",
-                "description": "Paramètres du logger",
                 "required": ["source", "bottom", "top"],
                 "properties": {
                     "bottom": {
@@ -222,7 +221,7 @@
                                 },
                                 "root": {
                                     "type": "string",
-                                    "description": "Racine de stockage : un dossier pour le type FILE, le nom du pool en CEPH, le nom du bucket en S3 et le nom du container en SIFT"
+                                    "description": "Racine de stockage : un dossier pour le type FILE, le nom du pool en CEPH, le nom du bucket en S3 et le nom du container en SWIFT"
                                 },
                                 "depth": {
                                     "type": "integer",

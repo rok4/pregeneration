@@ -40,24 +40,13 @@ File: Validator.pm
 
 Class: ROK4::BE4::Validator
 
-Describe a node of a <ROK4::PREGENERATION::QTree> or a <ROK4::PREGENERATION::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
-
 Using:
     (start code)
     use ROK4::BE4::Validator;
 
-    if (! ROK4::BE4::Validator::validate()
-    
-    my $graph = ROK4::Core::Qtree->new(...)
-    #or
-    my $graph = ROK4::PREGENERATION::NNGraph->new(...)
-    
-    my $node = ROK4::BE4::Node->new({
-        col => 51,
-        row => 756,
-        tm => $tm,
-        graph => $graph
-    });
+    if (! ROK4::BE4::Validator::validate()) {
+        ERROR("Misconfiguration !")
+    }
     (end code)
 
 =cut

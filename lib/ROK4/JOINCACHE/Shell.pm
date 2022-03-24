@@ -100,20 +100,20 @@ Function: setGlobals
 Define and create common working directories
 =cut
 sub setGlobals {
-    $PARALLELIZATIONLEVEL = shift;
-    $PERSONNALTEMPDIR = shift;
-    $COMMONTEMPDIR = shift;
-    $SCRIPTSDIR = shift;
-    $MERGEMETHOD = shift;
-    $USEMASK = shift;
+    my $params = shift;
 
-    if (defined $USEMASK && uc($USEMASK) eq "TRUE") {
+    if (defined $params->{mask} && $params->{mask}) {
         $USEMASK = TRUE;
     } else {
         $USEMASK = FALSE;
     }
 
-    $COMMONTEMPDIR = File::Spec->catdir($COMMONTEMPDIR);
+    $PARALLELIZATIONLEVEL = $params->{parallelization};
+    $PERSONNALTEMPDIR = File::Spec->rel2abs($params->{directories}->{local_tmp});
+    $COMMONTEMPDIR = File::Spec->rel2abs($params->{directories}->{shared_tmp});
+    $SCRIPTSDIR = File::Spec->rel2abs($params->{directories}->{scripts});
+    $MERGEMETHOD = $params->{merge_method};
+
     $ONTCONFDIR = File::Spec->catfile($COMMONTEMPDIR,"overlayNtiff");
     
     # Common directory
@@ -345,7 +345,6 @@ LinkSlab () {
 
     # On retire le pool des entrées
     target=`echo -n "$target" | sed "s#^${PYR_POOL}/##"`
-    link=`echo -n "$link" | sed "s#^${PYR_POOL}/##"`
 
     echo -n "SYMLINK#${target}" | rados -p ${PYR_POOL} put ${PYR_PREFIX}/$slabName /dev/stdin
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -411,7 +410,7 @@ LinkSlab () {
         return
     fi
 
-    mkdir -p $(dirname $link)
+    mkdir -p $(dirname ${PYR_DIR}/$slabName)
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     ln -s $target ${PYR_DIR}/$slabName

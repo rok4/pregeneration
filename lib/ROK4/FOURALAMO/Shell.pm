@@ -86,7 +86,6 @@ our $SCRIPTSDIR;
 our $COMMONTEMPDIR;
 our $PERSONNALTEMPDIR;
 our $PARALLELIZATIONLEVEL;
-our $ISUPDATE;
 
 =begin nd
 Function: setGlobals
@@ -94,13 +93,12 @@ Function: setGlobals
 Define and create common working directories
 =cut
 sub setGlobals {
-    $PARALLELIZATIONLEVEL = shift;
-    $PERSONNALTEMPDIR = shift;
-    $COMMONTEMPDIR = shift;
-    $SCRIPTSDIR = shift;
-    $ISUPDATE = shift;
+    my $params = shift;
 
-    $COMMONTEMPDIR = File::Spec->catdir($COMMONTEMPDIR);
+    $PARALLELIZATIONLEVEL = $params->{parallelization};
+    $PERSONNALTEMPDIR = File::Spec->rel2abs($params->{directories}->{local_tmp});
+    $COMMONTEMPDIR = File::Spec->rel2abs($params->{directories}->{shared_tmp});
+    $SCRIPTSDIR = File::Spec->rel2abs($params->{directories}->{scripts});
 
     # Common directory
     if (! -d $COMMONTEMPDIR) {

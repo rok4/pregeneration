@@ -1,0 +1,205 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "title": "JOINCACHE pregeneration configuration",
+    "type": "object",
+    "required": [
+        "datasources",
+        "pyramid",
+        "process"
+    ],
+    "properties": {
+        "logger": {
+            "type": "object",
+            "description": "Paramètres du logger",
+            "properties": {
+                "layout": {
+                    "type": "string",
+                    "description": "Format du log, selon la syntaxe Log4perl",
+                    "default": "%5p : %m (%M) %n"
+                },
+                "file": {
+                    "type": "string",
+                    "description": "Chemin vers le fichier où écrire les logs. Les logs sont dans la sortie standard si ce paramètre n'est pas fourni"
+                },
+                "level": {
+                    "type": "string",
+                    "description": "Niveau de log",
+                    "enum": [
+                        "DEBUG",
+                        "INFO",
+                        "WARN",
+                        "ERROR",
+                        "ALWAYS"
+                    ],
+                    "default": "WARN"
+                }
+            }
+        },
+        "datasources": {
+            "type": "array",
+            "description": "Pyramides sources",
+            "items": {
+                "type": "object",
+                "required": ["source", "bottom", "top"],
+                "properties": {
+                    "bottom": {
+                        "type": "string",
+                        "description": "Niveau du TMS de la pyramide en sortie pour lequel la source est utilisée"
+                    },
+                    "top": {
+                        "type": "string",
+                        "description": "Niveau du TMS de la pyramide en sortie jusqu'auquel la source sera utilisée"
+                    },
+                    "source": {
+                        "type": "object",
+                        "description": "Base PostgreSQL comme source de données",
+                        "required": ["type", "area", "descriptors"],
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "description": "Type de source",
+                                "enum": ["PYRAMIDS"]
+                            },
+                            "area": {
+                                "oneOf": [{
+                                    "type": "object",
+                                    "description": "Zone d'utilisation définie par un rectangle englobant",
+                                    "required": ["bbox"],
+                                    "properties": {
+                                        "bbox": {
+                                            "type": "array",
+                                            "description": "Coordonnées des coins, dans l'ordre xmin, ymin, xmax, ymax, dans le système des pyramides",
+                                            "items": {
+                                                "type": "number"
+                                            },
+                                            "minItems": 4,
+                                            "maxItems": 4
+                                        }
+                                    }
+                                }, {
+                                    "type": "object",
+                                    "description": "Zone d'utilisation définie par une géométrie complexe",
+                                    "required": ["geometry"],
+                                    "properties": {
+                                        "geometry": {
+                                            "type": "string",
+                                            "description": "Fichier contenant une géométrie, en WKT, GeoJSON ou GML, dans le système des pyramides"
+                                        }
+                                    }
+                                }]
+                            },
+                            "descriptors": {
+                                "type": "array",
+                                "description": "Liste des chemins vers les descripteurs de pyramides (toutes doivent avoir les même caractéristiques (stockage, pixel, TMS...)",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 1
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "pyramid": {
+            "type": "object",
+            "description": "Génération d'une nouvelle pyramide comme produit de fusion",
+            "required": ["name", "nodata", "compression"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Nom de la nouvelle pyramide fusionnée"
+                },
+                "storage": {
+                    "type": "object",
+                    "required": ["root"],
+                    "description": "La précision du stockage n'est utile que dans le cas d'une génération sur un stockage FILE",
+                    "properties": {
+                        "root": {
+                            "type": "string",
+                            "description": "Racine de stockage : uniquement dans le cas d'un stockage FILE des pyramides, dossier d'écriture de la pyramides en sortie"
+                        }
+                    }
+
+                },
+                "pixel": {
+                    "type": "object",
+                    "required": ["sampleformat", "samplesperpixel"],
+                    "properties": {
+                        "sampleformat": {
+                            "type": "string",
+                            "description": "Format des canaux des images en sortie",
+                            "enum": [
+                                "UINT8", "FLOAT32"
+                            ]
+                        },
+                        "samplesperpixel": {
+                            "type": "integer",
+                            "description": "Nombre de canaux des images en sortie",
+                            "minimum": 1,
+                            "maximum": 4
+                        }
+                    }
+                },
+                "compression": {
+                    "type": "string",
+                    "description": "Compression des données dans les tuiles",
+                    "enum": [
+                        "none", "jpg", "png", "jpg90", "zip", "lzw", "pkb"
+                    ],
+                    "default": "none"
+                },
+                "nodata": {
+                    "type": "array",
+                    "description": "Valeur de nodata dans les données de la pyramide en sortie, une valeur par canal",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "minItems": 1
+                },
+                "mask": {
+                    "type": "boolean",
+                    "description": "Doit-on écrire les masques de données dans la pyramide en sortie. Si oui, ils seront utilisés dans les traitements.",
+                    "default": false
+                }
+            }
+        }
+    },
+    "process": {
+        "type": "object",
+        "description": "Paramètres de traitement",
+        "required": ["directories", "parallelization", "merge_method"],
+        "properties": {
+            "directories": {
+                "type": "object",
+                "description": "Dossiers de génération",
+                "required": ["scripts", "local_tmp", "shared_tmp"],
+                "properties": {
+                    "local_tmp": {
+                        "type": "string",
+                        "description": "Dossier temporaire de génération individuel de chaque script de génération"
+                    },
+                    "shared_tmp": {
+                        "type": "string",
+                        "description": "Dossier temporaire de génération partagé entre les scripts de prégénération et génération"
+                    }
+                }
+            },
+            "parallelization": {
+                "type": "integer",
+                "description": "Niveau de parallélisation, défini le nombre de scripts de génération exécutables en parallèle",
+                "minimum": 1
+            },
+            "merge_method": {
+                "type": "string",
+                "description": "Méthode de fusion des dalles superposées",
+                "enum": ["REPLACE", "TOP", "ALPHATOP", "MULTIPLY"]
+            },
+            "mask": {
+                "type": "boolean",
+                "description": "Doit-on utiliser les masques de données dans les calculs",
+                "default": false
+            }
+        }
+    }
+}

@@ -59,6 +59,7 @@ Attributes:
     extent - <OGR::Geometry> - Precise extent, in the previous SRS (can be a bbox). It is calculated from the <SourceImage> or supplied in configuration file. 'extent' is mandatory (a bbox or a file which contains a WKT geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
     list - string - File path, containing a list of image indices (I,J) to harvest.
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
+    area - string - Provided area : BBOX, LIST or EXTENT
 
     images - <ROK4::PREGENERATION::SourceImage> - Georeferenced images' source.
     wms - <ROK4::PREGENERATION::SourceWMS> - WMS server.
@@ -80,6 +81,8 @@ use List::Util qw(min max);
 use ROK4::PREGENERATION::SourceImage;
 use ROK4::PREGENERATION::SourceWMS;
 use ROK4::PREGENERATION::SourceDatabase;
+use ROK4::PREGENERATION::SourcePyramid;
+use ROK4::Core::PyramidRaster;
 use ROK4::Core::ProxyGDAL;
 
 
@@ -126,11 +129,13 @@ sub new {
         bbox => undef,
         list => undef,
         extent => undef,
+        area => undef,
         srs => undef,
 
         images => undef,
         wms => undef,
-        database => undef
+        database => undef,
+        pyramids => undef
     };
 
     bless($this, $class);
@@ -163,6 +168,7 @@ sub _load {
         $this->{srs} = $params->{source}->{srs};
         my @BBOX = $this->{images}->computeBBox();
         $this->{bbox} = \@BBOX;
+        $this->{area} = "BBOX";
     }
     elsif ($this->{type} eq "WMS") {
         $this->{wms} = ROK4::PREGENERATION::SourceWMS->new($params->{source});
@@ -175,12 +181,15 @@ sub _load {
         }
         if (exists $params->{source}->{area}->{bbox}) {
             $this->{bbox} = $params->{source}->{area}->{bbox};
+            $this->{area} = "BBOX";
         }
         if (exists $params->{source}->{area}->{geometry}) {
             $this->{extent} = $params->{source}->{area}->{geometry};
+            $this->{area} = "EXTENT";
         }
         if (exists $params->{source}->{area}->{list}) {
             $this->{list} = $params->{source}->{area}->{list};
+            $this->{area} = "LIST";
         }
     }
     elsif ($this->{type} eq "POSTGRESQL") {
@@ -193,12 +202,32 @@ sub _load {
             
         if (exists $params->{source}->{area}->{bbox}) {
             $this->{bbox} = $params->{source}->{area}->{bbox};
+            $this->{area} = "BBOX";
         }
         if (exists $params->{source}->{area}->{geometry}) {
             $this->{extent} = $params->{source}->{area}->{geometry};
+            $this->{area} = "EXTENT";
         }
         if (exists $params->{source}->{area}->{list}) {
             $this->{list} = $params->{source}->{area}->{list};
+            $this->{area} = "LIST";
+        }
+    }
+    elsif ($this->{type} eq "PYRAMIDS") {
+        $this->{pyramids} = ROK4::PREGENERATION::SourcePyramid->new($this->{bottomID}, $this->{topID}, $params->{source}->{descriptors});
+        if (! defined $this->{pyramids}) {
+            ERROR("Cannot load a PYRAMIDS source");
+            return FALSE;
+        }
+        $this->{srs} = $this->{pyramids}->getSRS();
+
+        if (exists $params->{source}->{area}->{bbox}) {
+            $this->{bbox} = $params->{source}->{area}->{bbox};
+            $this->{area} = "BBOX";
+        }
+        if (exists $params->{source}->{area}->{geometry}) {
+            $this->{extent} = $params->{source}->{area}->{geometry};
+            $this->{area} = "EXTENT";
         }
     }
 
@@ -207,7 +236,7 @@ sub _load {
         return FALSE;
     }
 
-    if (defined $this->{list}) {
+    if ($this->{area} eq "LIST") {
         # On a fourni un fichier contenant la liste des images (I et J) à générer
         my $file = $this->{list};
         if (! -e $file) {
@@ -215,10 +244,10 @@ sub _load {
             return FALSE ;
         }
     }
-    elsif (defined $this->{bbox}) {
+    elsif ($this->{area} eq "BBOX") {
         $this->{extent} = ROK4::Core::ProxyGDAL::geometryFromBbox(@{$this->{bbox}});
     }
-    elsif (defined $this->{extent}) {
+    elsif ($this->{area} eq "EXTENT") {
         my $file = $this->{extent};
         $this->{extent} = ROK4::Core::ProxyGDAL::geometryFromFile($file);
         if (! defined $this->{extent}) {
@@ -247,10 +276,22 @@ sub getSRS {
     return $this->{srs};
 }
 
+# Function: getArea
+sub getArea {
+    my $this = shift;
+    return $this->{area};
+}
+
 # Function: getExtent
 sub getExtent {
     my $this = shift;
     return $this->{extent};
+}
+
+# Function: getBbox
+sub getBbox {
+    my $this = shift;
+    return $this->{bbox};
 }
 
 # Function: getList
@@ -275,6 +316,12 @@ sub getSourceDatabase {
 sub getSourceImage {
     my $this = shift;
     return $this->{images};
+}
+
+# Function: getSourcePyramid
+sub getSourcePyramid {
+    my $this = shift;
+    return $this->{pyramids};
 }
 
 # Function: getType
@@ -310,8 +357,13 @@ sub getTopOrder {
 # Function: getPixel
 sub getPixel {
     my $this = shift;
-    if (! defined $this->{images}) {return undef;}
-    return $this->{images}->getPixel();
+    if (defined $this->{images}) {
+        return $this->{images}->getPixel();
+    }
+    if (defined $this->{pyramids}) {
+        return $this->{pyramids}->getPixel();
+    }
+    return undef;
 }
 
 =begin nd

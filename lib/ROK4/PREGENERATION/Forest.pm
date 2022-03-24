@@ -167,7 +167,7 @@ Only scripts creation and initial organization are managed by the forest.
 
 Parameters (list):
     sources - <ROK4::PREGENERATION::Source> array reference - List of data sources
-    params - hash reference - All configuration
+    params - hash reference - Process configuration
 
 =cut
 sub _load {
@@ -180,37 +180,30 @@ sub _load {
     
     ######### PARAM PROCESS ###########
     
-    $this->{splitNumber} = $params->{process}->{parallelization};
-    my $tempDir = File::Spec->rel2abs($params->{process}->{directories}->{local_tmp});
-    my $commonTempDir = File::Spec->rel2abs($params->{process}->{directories}->{shared_tmp});
-    my $scriptDir = File::Spec->rel2abs($params->{process}->{directories}->{scripts});
+    $this->{splitNumber} = $params->{parallelization};
 
     ############# SHELL #############
 
     my $scriptInit = undef;
-    my $is_update = ($params->{pyramid}->{type} ne "GENERATION");
     if (ref ($this->{pyramid}) eq "ROK4::Core::PyramidRaster") {
         # Si on génère une pyramide raster, c'est que nous utilisons l'outil BE4, et des variables sont à initialiser dans la librairie des commandes Shell pour BE4
 
-        if ($this->{pyramid}->ownMasks()) {
-            # Si on souhaite avoir des masques dans la pyramide de sortie, il faut les utiliser tout du long des calculs
-            $params->{pyramid}->{mask}->{use} = "TRUE";
-        }
-
-        if (! ROK4::BE4::Shell::setGlobals($this->{splitNumber}, $tempDir, $commonTempDir, $scriptDir, $params->{pyramid}->{mask}->{use}, $is_update)) {
+        if (! ROK4::BE4::Shell::setGlobals($params)) {
             ERROR ("Impossible d'initialiser la librairie des commandes Shell pour BE4");
             return FALSE;
         }
+
         $scriptInit = ROK4::BE4::Shell::getScriptInitialization(
             $this->{pyramid},
-            $params->{process}->{style},
-            $params->{process}->{nodata}
+            $params->{style},
+            $params->{nodata}
         );
     } else {
-        if (! ROK4::FOURALAMO::Shell::setGlobals($this->{splitNumber}, $tempDir, $commonTempDir, $scriptDir, $is_update)) {
+        if (! ROK4::FOURALAMO::Shell::setGlobals($params)) {
             ERROR ("Impossible d'initialiser la librairie des commandes Shell pour 4ALAMO");
             return FALSE;
         }
+
         $scriptInit = ROK4::FOURALAMO::Shell::getScriptInitialization(
             $this->{pyramid}
         );

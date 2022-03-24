@@ -103,7 +103,6 @@ Contains be4 call options :
     help - To obtain the command's help
     usage - To obtain the command's usage
     properties - Configuration file
-    environment - Environment file
 =cut
 my %options =
 (
@@ -181,7 +180,7 @@ sub main {
 =begin nd
 Function: init
 
-Checks options and initializes the default logger. Check environment file (optionnal) and properties file (mandatory).
+Checks options and initializes the default logger. Check properties file (mandatory).
 =cut
 sub init {
   
@@ -201,20 +200,19 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "See documentation here: https://github.com/rok4/rok4\n" ;
+            printf "See documentation here: https://github.com/rok4/pregeneration\n" ;
             exit 0;
         },
         "version|v" => sub { exit 0; },
         "usage" => sub {
-            printf "See documentation here: https://github.com/rok4/rok4\n" ;
+            printf "See documentation here: https://github.com/rok4/pregeneration\n" ;
             exit 0;
         },
         
-        "properties|conf=s" => \$options{properties},
-        "environment|env=s" => \$options{environment}
+        "properties|conf=s" => \$options{properties}
     ) or do {
         printf "Unappropriate usage\n";
-        printf "See documentation here: https://github.com/rok4/rok4\n";
+        printf "See documentation here: https://github.com/rok4/pregeneration\n";
         exit -1;
     };
   
@@ -240,7 +238,7 @@ sub init {
 =begin nd
 Function: config
 
-Loads environment and properties files and merge parameters. Those in the properties file have priority over those in the environment file.
+Loads properties files and validate using <ROK4::BE4::Validator::validate>.
 
 See Also:
     <checkParams>
@@ -301,7 +299,7 @@ Function: writeListAndReferences
 sub writeListAndReferences {
 
     my $storageType = $this{loaded}->{output_pyramid}->getStorageType();
-    my $newListPath = $this{params}->{process}->{directories}->{shared_tmp}."/content.list";
+    my $newListPath = File::Spec->catfile($ROK4::BE4::Shell::COMMONTEMPDIR, "content.list");
     my $newRoot = $this{loaded}->{output_pyramid}->getDataRoot();
     my $updateMode = $this{loaded}->{update_mode};
 
@@ -464,6 +462,7 @@ sub doIt {
     my $params = $this{params};
 
     ####################### LOAD SOURCES
+    
     ALWAYS(">>> Load data sources...");
 
     my $datasources = $this{params}->{datasources};
@@ -561,11 +560,12 @@ sub doIt {
         $storageType = $this{loaded}->{output_pyramid}->getStorageType();
     }
 
-    # Environment variables nécessaire au stockage
+    # On copie le type de génération de pyramide dans la section process
+    $params->{process}->{type} = $pyramid->{type};
 
-    if (! ROK4::Core::ProxyStorage::checkEnvironmentVariables($storageType)) {
-        ERROR("Environment variable is missing for a $storageType storage");
-        return FALSE;
+    if ($this{loaded}->{output_pyramid}->ownMasks()) {
+        # Si on souhaite avoir des masques dans la pyramide de sortie, il faut les utiliser tout du long des calculs
+        $params->{process}->{mask} = 1;
     }
 
     ####################### UPDATE SOURCES
@@ -644,7 +644,7 @@ sub doIt {
     $this{loaded}->{forest} = ROK4::PREGENERATION::Forest->new(
         $this{loaded}->{output_pyramid},
         $this{loaded}->{sources},
-        $this{params}
+        $params->{process}
     );
 
     if (! defined $this{loaded}->{forest}) {
@@ -680,12 +680,12 @@ sub doIt {
         return FALSE;
     }
     
-    DEBUG(sprintf "FOREST (debug export) = %s", $objForest->exportForDebug());
+    DEBUG(sprintf "FOREST (debug export) = %s", $this{loaded}->{forest}->exportForDebug());
 
     #######################
     # Écrire le script principal
     ALWAYS(">>> Write main script");
-    my $scriptPath = File::Spec->catfile($this{params}->{process}->{directories}->{scripts}, "main.sh");
+    my $scriptPath = File::Spec->catfile($ROK4::BE4::Shell::SCRIPTSDIR, "main.sh");
     open(MAIN, ">$scriptPath") or do {
         ERROR("Cannot open '$scriptPath' to write in it");
         return FALSE;

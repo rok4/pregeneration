@@ -40,7 +40,6 @@
             "description": "Sources de données",
             "items": {
                 "type": "object",
-                "description": "Paramètres du logger",
                 "required": ["source", "bottom", "top"],
                 "properties": {
                     "bottom": {
@@ -249,7 +248,7 @@
                                 },
                                 "root": {
                                     "type": "string",
-                                    "description": "Racine de stockage : un dossier pour le type FILE, le nom du pool en CEPH, le nom du bucket en S3 et le nom du container en SIFT"
+                                    "description": "Racine de stockage : un dossier pour le type FILE, le nom du pool en CEPH, le nom du bucket en S3 et le nom du container en SWIFT"
                                 },
                                 "depth": {
                                     "type": "integer",
@@ -269,19 +268,9 @@
                             "minItems": 1
                         },
                         "mask": {
-                            "type": "object",
-                            "properties": {
-                                "use": {
-                                    "type": "boolean",
-                                    "description": "Doit-on utiliser les masques de données dans les traitements",
-                                    "default": false
-                                },
-                                "export": {
-                                    "type": "boolean",
-                                    "description": "Doit-on écrire les masques de données dans la pyramide en sortie. Si oui, ils seront utilisés dans les traitements.",
-                                    "default": false
-                                }
-                            }
+                            "type": "boolean",
+                            "description": "Doit-on écrire les masques de données dans la pyramide en sortie. Si oui, ils seront utilisés dans les traitements.",
+                            "default": false
                         },
                         "interpolation": {
                             "type": "string",
@@ -378,6 +367,11 @@
                     "type": "integer",
                     "description": "Niveau de parallélisation, défini le nombre de scripts de génération exécutables en parallèle",
                     "minimum": 1
+                },
+                "mask": {
+                    "type": "boolean",
+                    "description": "Doit-on utiliser les masques de données dans les calculs",
+                    "default": false
                 }
             }
         }

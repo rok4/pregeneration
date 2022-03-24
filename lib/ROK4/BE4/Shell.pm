@@ -102,20 +102,25 @@ Function: setGlobals
 Define and create common working directories
 =cut
 sub setGlobals {
-    $PARALLELIZATIONLEVEL = shift;
-    $PERSONNALTEMPDIR = shift;
-    $COMMONTEMPDIR = shift;
-    $SCRIPTSDIR = shift;
-    $USEMASK = shift;
-    $ISUPDATE = shift;
+    my $params = shift;
 
-    if (defined $USEMASK && $USEMASK) {
+    if (defined $params->{mask} && $params->{mask}) {
         $USEMASK = TRUE;
     } else {
         $USEMASK = FALSE;
     }
 
-    $COMMONTEMPDIR = File::Spec->catdir($COMMONTEMPDIR);
+    if ($params->{pyramid}->{type} eq "GENERATION") {
+        $ISUPDATE = FALSE;
+    } else {
+        $ISUPDATE = TRUE;
+    }
+
+    $PARALLELIZATIONLEVEL = $params->{parallelization};
+    $PERSONNALTEMPDIR = File::Spec->rel2abs($params->{directories}->{local_tmp});
+    $COMMONTEMPDIR = File::Spec->rel2abs($params->{directories}->{shared_tmp});
+    $SCRIPTSDIR = File::Spec->rel2abs($params->{directories}->{scripts});
+
     $MNTCONFDIR = File::Spec->catfile($COMMONTEMPDIR,"mergeNtiff");
     $DNTCONFDIR = File::Spec->catfile($COMMONTEMPDIR,"decimateNtiff");
     
