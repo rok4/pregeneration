@@ -110,10 +110,9 @@ sub setGlobals {
         $USEMASK = FALSE;
     }
 
-    if ($params->{pyramid}->{type} eq "GENERATION") {
+    $ISUPDATE = FALSE;
+    if ($params->{pyramid}->{type} ne "GENERATION") {
         $ISUPDATE = FALSE;
-    } else {
-        $ISUPDATE = TRUE;
     }
 
     $PARALLELIZATIONLEVEL = $params->{parallelization};
