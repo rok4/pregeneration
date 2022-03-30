@@ -185,7 +185,7 @@
                         },
                         "name": {
                             "type": "string",
-                            "description": "Nom de la nouvelle pyramide"
+                            "description": "Nom de la nouvelle pyramide. Ne peut pas contenir de `/` pour un stockage fichier"
                         },
                         "slab_size": {
                             "type": "array",
@@ -200,7 +200,7 @@
                         },
                         "compression": {
                             "type": "string",
-                            "description": "Compression des données dans les tuiles",
+                            "description": "Compression des données dans les tuiles. La compression PNG donnera des dalles non lisible par des logiciels tiers.",
                             "enum": [
                                 "none", "jpg", "png", "jpg90", "zip", "lzw", "pkb"
                             ],
@@ -298,7 +298,7 @@
                         },
                         "update_mode": {
                             "type": "string",
-                            "description": "Mode de référencement des dalles de la pyramide ancêtre (hlink uniquement dans le cas d'un stockage FICHIER)",
+                            "description": "Mode de référencement des dalles de la pyramide ancêtre (HLINK est disponible uniquement dans le cas d'un stockage FICHIER). Le mode SLINK rend la nouvelle pyramide dépendante de la pyramide à mettre à jour.",
                             "enum": [
                                 "slink", "hlink", "copy"
                             ],
@@ -306,7 +306,7 @@
                         },
                         "name": {
                             "type": "string",
-                            "description": "Nom de la nouvelle pyramide"
+                            "description": "Nom de la nouvelle pyramide. Ne peut pas contenir de `/` pour un stockage fichier"
                         },
                         "root": {
                             "type": "string",

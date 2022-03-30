@@ -17,10 +17,22 @@ De même, un fichier .prog à côté du script peut être mis à jour avec le po
 - [Variables d'environnement utilisées dans les librairies ROK4::Core](#variables-denvironnement-utilisées-dans-les-librairies-rok4core)
 - [Présentation des outils](#présentation-des-outils)
   - [BE4](#be4)
+    - [Usage](#usage)
+    - [Détails](#détails)
+    - [Exemples de configuration](#exemples-de-configuration)
   - [JOINCACHE](#joincache)
+    - [Usage](#usage-1)
+    - [Détails](#détails-1)
+    - [Exemples de configuration](#exemples-de-configuration-1)
   - [4ALAMO](#4alamo)
+    - [Usage](#usage-2)
+    - [Détails](#détails-2)
+    - [Exemples de configuration](#exemples-de-configuration-2)
   - [4HEAD](#4head)
   - [PYR2PYR](#pyr2pyr)
+    - [Usage](#usage-3)
+    - [Détails](#détails-3)
+    - [Exemples de configuration](#exemples-de-configuration-3)
 
 ## Récupération du projet
 
@@ -125,6 +137,17 @@ Outils externes utilisés :
 
 * wget
 
+#### Usage
+
+`be4.pl --conf /home/IGN/conf.json [--help|--usage|--version]`
+
+* `--help` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--usage` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--version` Affiche la version de l'outil et quitte
+* `--conf <file path>` Execute l'outil en prenant en compte ce fichier de configuration
+
+#### Détails
+
 _Étape 1_
 ![BE4 étape 1](./docs/images/be4_part1.png)
 
@@ -134,7 +157,107 @@ _Étape 2 (QTree)_
 _Étape 2 (NNGraph)_
 ![BE4 étape 2 NNGraph](./docs/images/be4_part2_nngraph.png)
 
-[Détails](./bin/be4.md)
+
+#### Exemples de configuration
+
+Génération d'une nouvelle pyramide depuis des images géoréférencées type MNT, avec application d'un style de pente
+
+```json
+{
+    "logger": {
+        "level": "INFO",
+        "layout": "%5p : %m (%M) %n"
+    },
+    "datasources": [
+        {
+            "top": "0",
+            "bottom": "<AUTO>",
+            "source": {
+                "type": "IMAGES",
+                "directory": "/data/RGEALTI5M",
+                "srs": "IGNF:LAMB93"
+            }
+        }
+    ],
+    "pyramid": {
+        "type": "GENERATION",
+        "name": "RGEALTI",
+        "compression": "zip",
+        "tms": "LAMB93_1M_MNT.json",
+        "storage": {
+            "type": "FILE",
+            "root": "/data/tsatabin/PYRAMIDS"
+        },
+        "nodata": [0,0,0,0],
+        "pixel": {
+            "sampleformat": "UINT8",
+            "samplesperpixel": 4
+        }
+    },
+    "process": {
+        "directories": {
+            "scripts": "/scripts",
+            "local_tmp": "/tmp",
+            "shared_tmp": "/share"
+        },
+        "parallelization": 1,
+        "style": "/styles/montagne.json",
+        "nodata": [-99999]
+    }
+}
+```
+
+Mise à jour par référence d'une pyramide S3 par moissonnage d'un service WMS
+
+```json
+{
+    "logger": {
+        "level": "INFO",
+        "layout": "%5p : %m (%M) %n"
+    },
+    "datasources": [
+        {
+            "top": "0",
+            "bottom": "8",
+            "source": {
+                "type": "WMS",
+                "area": {
+                    "bbox": [5,45,6,46],
+                    "srs": "EPSG:4326"
+                },
+                "layers": "GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2",
+                "url": "https://wxs.ign.fr/essentiels/geoportail/r/wms"
+            }
+        },
+        {
+            "top": "9",
+            "bottom": "12",
+            "source": {
+                "type": "WMS",
+                "area": {
+                    "bbox": [5,45,6,46],
+                    "srs": "EPSG:4326"
+                },
+                "layers": "GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2",
+                "url": "https://wxs.ign.fr/essentiels/geoportail/r/wms"
+            }
+        }
+    ],
+    "pyramid": {
+        "type": "UPDATE",
+        "name": "PLANIGNV2_UPDATED",
+        "pyramid_to_update": "s3://bucket/pyramides/PLANIGNV2.json",
+    },
+    "process": {
+        "directories": {
+            "scripts": "/scripts",
+            "local_tmp": "/tmp",
+            "shared_tmp": "/share"
+        },
+        "parallelization": 1
+    }
+}
+```
 
 ### JOINCACHE
 
@@ -150,6 +273,16 @@ Outils de génération utilisés :
 * overlayNtiff
 * work2cache
 
+#### Usage
+
+`joincache.pl --conf /home/IGN/conf.json [--help|--usage|--version]`
+
+* `--help` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--usage` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--version` Affiche la version de l'outil et quitte
+* `--conf <file path>` Execute l'outil en prenant en compte ce fichier de configuration principal
+
+#### Détails
 
 _Étape 1_
 ![JOINCACHE étape 1](./docs/images/joinCache_part1.png)
@@ -157,7 +290,64 @@ _Étape 1_
 _Étape 2_
 ![JOINCACHE étape 2](./docs/images/joinCache_part2.png)
 
-[Détails](./main/joincache.md)
+
+#### Exemples de configuration
+
+Génération d'une pyramide par fusion de 2 pyramides CEPH, avec conversion des canaux
+
+```json
+{
+    "logger": {
+        "level": "WARN",
+        "layout": "%5p : %m (%M) %n",
+        "file": "/var/log/joincache.log"
+    },
+    "datasources": [
+        {
+            "top": "0",
+            "bottom": "10",
+            "source": {
+                "type": "PYRAMIDS",
+                "area": {
+                    "bbox": [
+                        -572324.2901945519,
+                        5061666.243846581,
+                        1064224.752260841,
+                        6637050.045897862
+                    ]
+                },
+                "descriptors": [
+                    "ceph:///pool/pyramids/NORD.json",
+                    "ceph:///pool/pyramids/SUD.json"
+                ]
+            }
+        }
+    ],
+    "pyramid": {
+        "name": "ENTIER",
+        "storage": {
+            "type": "CEPH",
+            "root": "pool"
+        },
+        "pixel": {
+            "samplesperpixel": 1,
+            "sampleformat": "UINT8"
+        },
+        "nodata": [255],
+        "compression": "png"
+    },
+    "process": {
+        "directories": {
+            "scripts": "/scripts",
+            "local_tmp": "/tmp",
+            "shared_tmp": "/share"
+        },
+        "parallelization": 1,
+        "merge_method": "TOP",
+        "mask": true
+    }
+}
+```
 
 ### 4ALAMO
 
@@ -176,13 +366,102 @@ Outils externes utilisés :
 * ogr2ogr
 * tippecanoe
 
+#### Usage
+
+`4alamo.pl --conf /home/IGN/conf.json [--help|--usage|--version]`
+
+* `--help` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--usage` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--version` Affiche la version de l'outil et quitte
+* `--conf <file path>` Execute l'outil en prenant en compte ce fichier de configuration
+
+#### Détails
+
 _Étape 1_
 ![4ALAMO étape 1](./docs/images/ROK4GENERATION/4alamo_part1.png)
 
 _Étape 2_
 ![4ALAMO étape 2](./docs/images/ROK4GENERATION/4alamo_part2.png)
 
-[Détails](./bin/4alamo.md)
+#### Exemples de configuration
+
+Mise à jour par injection d'une pyramide SWIFT à partir de tables PostgreSQL
+
+```json
+{
+   "logger": {
+      "level": "ERROR",
+      "layout": "%5p : %m (%M) %n"
+   },
+   "datasources": [
+      {
+         "top": "4",
+         "bottom": "9",
+         "source": {
+            "type": "POSTGRESQL",
+            "area": {
+               "bbox": [10,45,15,50]
+            },
+            "srs": "EPSG:4326",
+            "db" : {
+               "user" : "reader",
+               "password" : "reader",
+               "database" : "geodata",
+               "host" : "postgresql.internal"
+            },
+            "tables" : [
+               {
+                  "schema" : "essentiels",
+                  "native_name" : "region",
+                  "attributes" : ["*"]
+               }
+            ]
+         }
+      },
+      {
+         "top": "10",
+         "bottom": "12",
+         "source": {
+            "type": "POSTGRESQL",
+            "area": {
+               "bbox": [10,45,15,50]
+            },
+            "srs": "EPSG:4326",
+            "db" : {
+               "user" : "reader",
+               "password" : "reader",
+               "database" : "geodata",
+               "host" : "postgresql.internal"
+            },
+            "tables" : [
+               {
+                  "schema" : "essentiels",
+                  "native_name" : "departement",
+                  "attributes" : ["*"]
+               },
+               {
+                  "schema" : "essentiels",
+                  "native_name" : "region",
+                  "attributes" : ["*"]
+               }
+            ]
+         }
+      }
+   ],
+   "pyramid": {
+      "type": "INJECTION",
+      "pyramid_to_inject": "swift:///container/pyramids/LIMADM.json"
+   },
+    "process": {
+        "directories": {
+            "scripts": "/scripts",
+            "local_tmp": "/tmp",
+            "shared_tmp": "/share"
+        },
+        "parallelization": 10
+    }
+}
+```
 
 ### 4HEAD
 
@@ -229,10 +508,55 @@ Conversions possibles :
 
 Parallélisable, reprise sur erreur, progression.
 
+#### Usage
+
+`pyr2pyr.pl --conf /home/IGN/conf.json [--help|--usage|--version]`
+
+* `--help` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--usage` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--version` Affiche la version de l'outil et quitte
+* `--conf <file path>` Execute l'outil en prenant en compte ce fichier de configuration
+
+#### Détails
+
 _Étape 1_
 ![PYR2PYR étape 1](./docs/images/pyr2pyr_part1.png)
 
 _Étape 2_
 ![PYR2PYR étape 2](./docs/images/pyr2pyr_part2.png)
 
-[Détails](./bin/pyr2pyr.md)
+
+#### Exemples de configuration
+
+Recopie d'une pyramide CEPH -> SWIFT
+
+```json
+{
+    "logger": {
+        "level": "DEBUG",
+        "layout": "%5p : %m (%M) %n"
+    },
+    "from": {
+        "descriptor": "ceph:///pool/pyramids/SCAN1000.json"
+    },
+    "to": {
+        "name": "pyramids/SCAN1000",
+        "storage": {
+            "type": "SWIFT",
+            "root": "container"
+        }
+    },
+    "process": {
+        "directories": {
+            "scripts": "/scripts",
+            "local_tmp": "/tmp",
+            "shared_tmp": "/share"
+        },
+        "parallelization": 32,
+        "follow_links": true
+    }
+}
+```
+
+
+
