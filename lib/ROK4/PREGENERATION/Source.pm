@@ -50,6 +50,8 @@ Using:
     (end code)
 
 Attributes:
+    type - string - Source type : VECTORS, IMAGES, WMS, POSTGRESQL por PYRAMIDS
+
     bottomID - string - Level identifiant, from which data source is used (base level).
     bottomOrder - integer - Level order, from which data source is used (base level).
     topID - string - Level identifiant, to which data source is used.
@@ -62,8 +64,11 @@ Attributes:
     area - string - Provided area : BBOX, LIST or EXTENT
 
     images - <ROK4::PREGENERATION::SourceImage> - Georeferenced images' source.
+    vectors - <ROK4::PREGENERATION::SourceVector> - Vector files source.
     wms - <ROK4::PREGENERATION::SourceWMS> - WMS server.
     database - <ROK4::PREGENERATION::SourceDatabase> - PostgreSQL server.
+    pyramids - <ROK4::PREGENERATION::SourcePyramid> - Pyramids source.
+    tippecanoe_options - string - options for tippecanoe calls, for vector sources
 =cut
 
 ################################################################################
@@ -80,6 +85,7 @@ use List::Util qw(min max);
 # My module
 use ROK4::PREGENERATION::SourceImage;
 use ROK4::PREGENERATION::SourceWMS;
+use ROK4::PREGENERATION::SourceVector;
 use ROK4::PREGENERATION::SourceDatabase;
 use ROK4::PREGENERATION::SourcePyramid;
 use ROK4::Core::PyramidRaster;
@@ -133,9 +139,12 @@ sub new {
         srs => undef,
 
         images => undef,
+        vectors => undef,
         wms => undef,
         database => undef,
-        pyramids => undef
+        pyramids => undef,
+
+        tippecanoe_options => ""
     };
 
     bless($this, $class);
@@ -169,6 +178,21 @@ sub _load {
         my @BBOX = $this->{images}->computeBBox();
         $this->{bbox} = \@BBOX;
         $this->{area} = "BBOX";
+    }
+    elsif ($this->{type} eq "VECTORS") {
+        $this->{vectors} = ROK4::PREGENERATION::SourceVector->new($params->{source});
+        if (! defined $this->{vectors}) {
+            ERROR("Cannot load a VECTORS source");
+            return FALSE;
+        }
+        $this->{srs} = $params->{source}->{srs};
+        my @BBOX = $this->{vectors}->computeBBox();
+        $this->{bbox} = \@BBOX;
+        $this->{area} = "BBOX";
+
+        if (exists($params->{tippecanoe_options}) && defined $params->{tippecanoe_options}) {
+            $this->{tippecanoe_options} = $params->{tippecanoe_options};
+        }
     }
     elsif ($this->{type} eq "WMS") {
         $this->{wms} = ROK4::PREGENERATION::SourceWMS->new($params->{source});
@@ -211,6 +235,10 @@ sub _load {
         if (exists $params->{source}->{area}->{list}) {
             $this->{list} = $params->{source}->{area}->{list};
             $this->{area} = "LIST";
+        }
+
+        if (exists($params->{tippecanoe_options}) && defined $params->{tippecanoe_options}) {
+            $this->{tippecanoe_options} = $params->{tippecanoe_options};
         }
     }
     elsif ($this->{type} eq "PYRAMIDS") {
@@ -300,34 +328,38 @@ sub getList {
     return $this->{list};
 }
 
-# Function: getSourceWMS
-sub getSourceWMS {
-    my $this = shift;
-    return $this->{wms};
-}
 
-# Function: getSourceDatabase
-sub getSourceDatabase {
+# Function: getSource
+sub getSource {
     my $this = shift;
-    return $this->{database};
-}
-
-# Function: getSourceImage
-sub getSourceImage {
-    my $this = shift;
-    return $this->{images};
-}
-
-# Function: getSourcePyramid
-sub getSourcePyramid {
-    my $this = shift;
-    return $this->{pyramids};
+    if ($this->{type} eq "WMS") {
+        return $this->{wms};
+    }
+    elsif ($this->{type} eq "POSTGRESQL") {
+        return $this->{database};
+    }
+    elsif ($this->{type} eq "IMAGES") {
+        return $this->{images};
+    }
+    elsif ($this->{type} eq "VECTORS") {
+        return $this->{vectors};
+    }
+    elsif ($this->{type} eq "PYRAMIDS") {
+        return $this->{pyramids};
+    }
+    return undef;
 }
 
 # Function: getType
 sub getType {
     my $this = shift;
     return $this->{type};
+}
+
+# Function: getTippecanoeOptions
+sub getTippecanoeOptions {
+    my $this = shift;
+    return $this->{tippecanoe_options};
 }
 
 # Function: getBottomID
@@ -411,51 +443,6 @@ sub setTopID {
     my $this = shift;
     my $topID = shift;
     $this->{topID} = $topID;
-}
-
-####################################################################################################
-#                                Group: Export methods                                             #
-####################################################################################################
-
-=begin nd
-Function: exportForDebug
-
-Returns all informations about the data source. Useful for debug.
-
-Example:
-    (start code)
-    (end code)
-=cut
-sub exportForDebug {
-    my $this = shift ;
-    
-    my $export = "";
-    
-    $export .= sprintf "\n Object ROK4::PREGENERATION::Source :\n";
-    $export .= sprintf "\t Extent: %s\n",$this->{extent};
-    $export .= sprintf "\t Levels ID (order):\n";
-    $export .= sprintf "\t\t- bottom : %s (%s)\n",$this->{bottomID},$this->{bottomOrder};
-    $export .= sprintf "\t\t- top : %s (%s)\n",$this->{topID},$this->{topOrder};
-
-    $export .= sprintf "\t Data :\n";
-    $export .= sprintf "\t\t- SRS : %s\n",$this->{srs};
-    $export .= "\t\t- We have images\n" if (defined $this->{imageSource});
-    $export .= "\t\t- We have a WMS service\n" if (defined $this->{harvesting});
-    $export .= "\t\t- We have a database\n" if (defined $this->{database});
-    
-    if (defined $this->{bbox}) {
-        $export .= "\t\t Bbox :\n";
-        $export .= sprintf "\t\t\t- xmin : %s\n",$this->{bbox}[0];
-        $export .= sprintf "\t\t\t- ymin : %s\n",$this->{bbox}[1];
-        $export .= sprintf "\t\t\t- xmax : %s\n",$this->{bbox}[2];
-        $export .= sprintf "\t\t\t- ymax : %s\n",$this->{bbox}[3];
-    }
-    
-    if (defined $this->{list}) {
-        $export .= sprintf "\t\t List file : %s\n", $this->{list};
-    }
-    
-    return $export;
 }
 
 1;

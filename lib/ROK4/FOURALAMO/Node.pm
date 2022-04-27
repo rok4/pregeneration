@@ -340,10 +340,10 @@ sub makeJsons {
     my $this = shift;
     my $datasource = shift;
 
-    my $dburl = $datasource->getSourceDatabase()->getSourceDatabaseInfos();
+    my $dburl = $datasource->getSource()->getInfos();
     my $srcSrs = $datasource->getSRS();
 
-    my @tables = $datasource->getSourceDatabase()->getSqlExports();
+    my @tables = $datasource->getSource()->getSqlExports();
 
     my @tmp = $this->getBBox(TRUE);
     if ($this->getLevel() eq "0") {
@@ -411,8 +411,14 @@ Returns:
 sub makeTiles {
     my $this = shift;
     my $datasource = shift;
-    
-    $this->{script}->write(sprintf "MakeTiles %s %s \"%s\"\n", $this->getGraph()->getTopID(), $this->getGraph()->getBottomID(), $datasource->getSourceDatabase()->getTippecanoeOptions());
+
+    # ${TMP_DIR}/jsons/*.json
+    my $sources = '${TMP_DIR}/jsons/*.json';
+    if ($datasource->getType() eq "VECTORS") {
+        $sources = $datasource->getSource()->getPathsList();
+    }
+
+    $this->{script}->write(sprintf "MakeTiles \"$sources\" %s %s \"%s\"\n", $this->getGraph()->getTopID(), $this->getGraph()->getBottomID(), $datasource->getTippecanoeOptions());
 
     return TRUE;
 }

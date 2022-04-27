@@ -1049,6 +1049,9 @@ sub getScriptInitialization {
     }
     $string .= "MNT_CONF_DIR=$MNTCONFDIR\n";
 
+    $string .= sprintf "TILES_PER_WIDTH=%s\n", $pyramid->getTilesPerWidth();
+    $string .= sprintf "TILES_PER_HEIGHT=%s\n", $pyramid->getTilesPerHeight();
+
     $string .= sprintf "WORK2CACHE_MASK_OPTIONS=\"-c zip -t %s %s\"\n", $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight();
 
     $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s -s %s -b %s -a %s\"\n",

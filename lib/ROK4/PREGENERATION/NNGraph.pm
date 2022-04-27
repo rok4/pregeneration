@@ -335,7 +335,7 @@ sub identifyBottomNodes {
     my $bottomID = $this->{bottomID};
     my $tm = $this->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
     if (! defined $tm) {
-        ERROR(sprintf "Impossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.", $bottomID, $this->getPyramid()->getTileMatrixSet()->exportForDebug());
+        ERROR(sprintf "Impossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.", $bottomID, $this->getPyramid()->getTileMatrixSet()->getName());
         return FALSE;
     };
     my $datasource = $this->{datasource};
@@ -343,7 +343,7 @@ sub identifyBottomNodes {
     
     if ($datasource->getType() eq "IMAGES" ) {
         # We have real data as source. Images determine bottom tiles
-        my @images = $datasource->getSourceImage()->getImages();
+        my @images = $datasource->getSource()->getImages();
         foreach my $objImg (@images){
             # On reprojette l'emprise si nécessaire
             my @bbox = ROK4::Core::ProxyGDAL::convertBBox($this->{ct_source_pyramid}, $objImg->getBBox()); # (xMin, yMin, xMax, yMax)
@@ -586,7 +586,7 @@ sub computeYourself {
                 # Le niveau du bas est fait à partir des sources : par moisonnage ou réechantillonnage
                 if ($this->getDataSource()->getType() eq "WMS") {
                     # Datasource has a WMS service : we have to use it
-                    if (! $node->wms2work(src->getSourceWMS())) {
+                    if (! $node->wms2work(src->getSource())) {
                         ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
                         return FALSE;
                     }

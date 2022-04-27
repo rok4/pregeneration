@@ -155,9 +155,10 @@ my $MAKETILES = <<'FUNCTION';
 
 mkdir -p ${TMP_DIR}/pbfs/
 MakeTiles () {
-    local top_level=$1
-    local bottom_level=$2
-    local generalization_options=$3
+    local sources=$1
+    local top_level=$2
+    local bottom_level=$3
+    local generalization_options=$4
 
     if [[ "${work}" == "0" ]]; then
         return
@@ -165,7 +166,7 @@ MakeTiles () {
 
     rm -r ${TMP_DIR}/pbfs/*
 
-    tippecanoe ${TIPPECANOE_OPTIONS} $generalization_options --base-zoom ${top_level} --full-detail 0 -Z ${top_level} -z ${bottom_level} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
+    tippecanoe ${TIPPECANOE_OPTIONS} $generalization_options --base-zoom ${top_level} --full-detail 10 -Z ${top_level} -z ${bottom_level} -e ${TMP_DIR}/pbfs/  $sources
     if [ $? != 0 ] ; then echo $0; fi
 
     rm ${TMP_DIR}/jsons/*.json
@@ -193,9 +194,30 @@ PushSlab () {
         return
     fi
     
-    pbf2cache ${PBF2CACHE_OPTIONS} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -bucket ${PYR_BUCKET} ${PYR_PREFIX}/$imgName
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    echo "0/$imgName" >> ${TMP_LIST_FILE}
+    local empty=1
+
+    let colmax=$ulcol+$TILES_PER_WIDTH-1
+    let rowmax=$ulrow+$TILES_PER_HEIGHT-1
+
+    for (( c=$ulcol; c<=$colmax; c++ )); do
+        for (( r=$ulrow; r<=$rowmax; r++ )); do
+            if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
+                empty=0
+                break
+            fi
+        done
+        if [[ "${empty}" = "0" ]]; then
+            break
+        fi
+    done
+
+    if [[ "${empty}" = "0" ]]; then
+        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -bucket ${PYR_BUCKET} ${PYR_PREFIX}/$imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
+    fi
+
+    print_prog
 }
 FUNCTION
 
@@ -216,9 +238,30 @@ PushSlab () {
         return
     fi
     
-    pbf2cache ${PBF2CACHE_OPTIONS} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -container ${PYR_CONTAINER} ${PYR_PREFIX}/$imgName
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    echo "0/$imgName" >> ${TMP_LIST_FILE}
+    local empty=1
+
+    let colmax=$ulcol+$TILES_PER_WIDTH-1
+    let rowmax=$ulrow+$TILES_PER_HEIGHT-1
+
+    for (( c=$ulcol; c<=$colmax; c++ )); do
+        for (( r=$ulrow; r<=$rowmax; r++ )); do
+            if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
+                empty=0
+                break
+            fi
+        done
+        if [[ "${empty}" = "0" ]]; then
+            break
+        fi
+    done
+
+    if [[ "${empty}" = "0" ]]; then
+        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -container ${PYR_CONTAINER} ${PYR_PREFIX}/$imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
+    fi
+
+    print_prog
 }
 FUNCTION
 
@@ -240,9 +283,28 @@ PushSlab () {
         return
     fi
 
-    pbf2cache ${PBF2CACHE_OPTIONS} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -pool ${PYR_POOL} ${PYR_PREFIX}/$imgName
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    echo "0/$imgName" >> ${TMP_LIST_FILE}
+    local empty=1
+
+    let colmax=$ulcol+$TILES_PER_WIDTH-1
+    let rowmax=$ulrow+$TILES_PER_HEIGHT-1
+
+    for (( c=$ulcol; c<=$colmax; c++ )); do
+        for (( r=$ulrow; r<=$rowmax; r++ )); do
+            if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
+                empty=0
+                break
+            fi
+        done
+        if [[ "${empty}" = "0" ]]; then
+            break
+        fi
+    done
+
+    if [[ "${empty}" = "0" ]]; then
+        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -pool ${PYR_POOL} ${PYR_PREFIX}/$imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
+    fi
 
     print_prog
 }
@@ -267,12 +329,31 @@ PushSlab () {
         return
     fi
 
-    local dir=`dirname ${PYR_DIR}/$imgName`
-    if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+    local empty=1
 
-    pbf2cache ${PBF2CACHE_OPTIONS} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow ${PYR_DIR}/$imgName
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    echo "0/$imgName" >> ${TMP_LIST_FILE}
+    let colmax=$ulcol+$TILES_PER_WIDTH-1
+    let rowmax=$ulrow+$TILES_PER_HEIGHT-1
+
+    for (( c=$ulcol; c<=$colmax; c++ )); do
+        for (( r=$ulrow; r<=$rowmax; r++ )); do
+            if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
+                empty=0
+                break
+            fi
+        done
+        if [[ "${empty}" = "0" ]]; then
+            break
+        fi
+    done
+
+    if [[ "${empty}" = "0" ]]; then
+        local dir=`dirname ${PYR_DIR}/$imgName`
+        if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+
+        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow ${PYR_DIR}/$imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
+    fi
 
     print_prog
 }
@@ -454,7 +535,8 @@ sub getScriptInitialization {
 
     $string .= sprintf "TIPPECANOE_OPTIONS=\"--no-progress-indicator --no-tile-compression -s %s\"\n", $pyramid->getTileMatrixSet()->getSRS();
 
-    $string .= sprintf "PBF2CACHE_OPTIONS=\"-t %s %s\"\n", $pyramid->getTilesPerWidth(), $pyramid->getTilesPerHeight();
+    $string .= sprintf "TILES_PER_WIDTH=%s\n", $pyramid->getTilesPerWidth();
+    $string .= sprintf "TILES_PER_HEIGHT=%s\n", $pyramid->getTilesPerHeight();
 
     if ($pyramid->getStorageType() eq "FILE") {
         $string .= sprintf "PYR_DIR=%s\n", $pyramid->getDataRoot();

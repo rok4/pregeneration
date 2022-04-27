@@ -327,8 +327,8 @@ sub load {
         push(@{$this{loaded}->{sources}}, $objSource);
 
         if (! defined $refPyramid) {
-            $refPyramid = $objSource->getSourcePyramid()->getPyramids()->[0];
-        } elsif ($refPyramid->checkCompatibility($objSource->getSourcePyramid()->[0]) == 0) {
+            $refPyramid = $objSource->getSource()->getPyramids()->[0];
+        } elsif ($refPyramid->checkCompatibility($objSource->getSource()->getPyramids()->[0]) == 0) {
             ERROR("Different PYRAMIDS sources have to be consistent");
             return FALSE;
         }
@@ -394,7 +394,7 @@ sub load {
 
     my $tms = $this{loaded}->{output_pyramid}->getTileMatrixSet();
     foreach my $s (@{$this{loaded}->{sources}}) {
-        my $pyramids = $s->getSourcePyramid()->getPyramids();
+        my $pyramids = $s->getSource()->getPyramids();
 
         my $topID = $s->getTopID();
         my $topOrder = $tms->getOrderfromID($topID);

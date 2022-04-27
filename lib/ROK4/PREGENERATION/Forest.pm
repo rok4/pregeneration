@@ -186,7 +186,8 @@ sub _load {
 
     my $scriptInit = undef;
     if (ref ($this->{pyramid}) eq "ROK4::Core::PyramidRaster") {
-        # Si on génère une pyramide raster, c'est que nous utilisons l'outil BE4, et des variables sont à initialiser dans la librairie des commandes Shell pour BE4
+        # Si on génère une pyramide raster, c'est que nous utilisons l'outil BE4, et des variables sont à 
+        # initialiser dans la librairie des commandes Shell pour BE4
 
         if (! ROK4::BE4::Shell::setGlobals($params)) {
             ERROR ("Impossible d'initialiser la librairie des commandes Shell pour BE4");
@@ -327,34 +328,6 @@ sub getScripts {
     return $this->{scripts};
 }
 
-####################################################################################################
-#                                Group: Export methods                                             #
-####################################################################################################
-
-=begin nd
-Function: exportForDebug
-
-Returns all informations about the forest. Useful for debug.
-
-Example:
-    (start code)
-    (end code)
-=cut
-sub exportForDebug {
-    my $this = shift ;
-    
-    my $export = "";
-    
-    $export .= sprintf "\n Object ROK4::PREGENERATION::Forest :\n";
-
-    $export .= "\t Graph :\n";
-    $export .= sprintf "\t Number of graphs in the forest : %s\n", scalar @{$this->{graphs}};
-    
-    $export .= "\t Scripts :\n";
-    $export .= sprintf "\t Parallelization level : %s\n", $this->{splitNumber};
-    
-    return $export;
-}
 
 1;
 __END__

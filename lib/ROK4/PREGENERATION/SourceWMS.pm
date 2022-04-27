@@ -270,36 +270,6 @@ sub getExtension {
     }
 }
 
-####################################################################################################
-#                                Group: Export methods                                             #
-####################################################################################################
-
-=begin nd
-Function: exportForDebug
-
-Returns all harvesting's components. Useful for debug.
-
-Example:
-    (start code)
-    (end code)
-=cut
-sub exportForDebug {
-    my $this = shift ;
-    
-    my $export = "";
-    
-    $export .= "\nObject ROK4::PREGENERATION::SourceWMS :\n";
-    $export .= sprintf "\t URL : %s\n",$this->{URL};
-    $export .= sprintf "\t PARAMETERS : %s\n",$this->{PARAMETERS};
-    $export .= sprintf "\t LAYERS : %s\n",$this->{LAYERS};
-
-    $export .= "\t Limits : \n";
-    $export .= sprintf "\t\t- Size min : %s\n",$this->{min_size};
-    $export .= sprintf "\t\t- Max width (in pixel) : %s\n",$this->{max_width};
-    $export .= sprintf "\t\t- Max height (in pixel) : %s\n",$this->{max_height};
-    
-    return $export;
-}
 
 1;
 __END__

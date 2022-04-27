@@ -584,7 +584,7 @@ sub doIt {
 
         my $bottomID = $s->getBottomID();
         if ($bottomID eq "<AUTO>") {
-            $bottomID = $tms->getBestLevelID($s->getSourceImage()->getBestResImage());
+            $bottomID = $tms->getBestLevelID($s->getSource()->getBestResImage());
             if (! defined $bottomID) {
                 ERROR(sprintf "Cannot auto detect the bottom level from image source best resolution");
                 return FALSE;
@@ -676,8 +676,6 @@ sub doIt {
         ERROR("Can not compute forest !");
         return FALSE;
     }
-    
-    DEBUG(sprintf "FOREST (debug export) = %s", $this{loaded}->{forest}->exportForDebug());
 
     #######################
     # Écrire le script principal

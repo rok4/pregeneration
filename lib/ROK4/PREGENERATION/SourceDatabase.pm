@@ -53,7 +53,6 @@ Attributes:
     dbname - string - postgis database name
     username - string - postgis server user
     password - string - postgis server user's password
-    tippecanoe_options - string - options for tippecanoe calls
     tables - hash - all informations about wanted tables
 |        {
 |            'public.departement' => {
@@ -206,7 +205,6 @@ sub new {
         dbname => undef,
         username => undef,
         password => undef,
-        tippecanoe_options => "",
         tables => {}
     };
 
@@ -263,11 +261,6 @@ Parameters (hash):
 sub _init {
     my $this   = shift;
     my $params = shift;
-
-    # TIPPECANOE
-    if (exists($params->{tippecanoe_options}) && defined $params->{tippecanoe_options}) {
-        $this->{tippecanoe_options} = $params->{tippecanoe_options};
-    }
     
     # PORT    
     if (exists($params->{db}->{port}) && defined ($params->{db}->{port})) {
@@ -407,11 +400,11 @@ sub _load {
 ####################################################################################################
 
 =begin nd
-Function: getSourceDatabaseInfos
+Function: getInfos
 
 Return database url ("host=postgis.ign.fr dbname=bdtopo user=ign password=PWD port=5432")
 =cut
-sub getSourceDatabaseInfos {
+sub getInfos {
     my $this = shift;
 
     my $url = sprintf "host=%s dbname=%s user=%s password=%s port=%s",
@@ -461,12 +454,6 @@ sub getSqlExports {
 sub getTables {
     my $this = shift;
     return $this->{tables};
-}
-
-# Function: getTippecanoeOptions
-sub getTippecanoeOptions {
-    my $this = shift;
-    return $this->{tippecanoe_options};
 }
 
 1;

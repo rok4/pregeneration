@@ -428,8 +428,8 @@ sub doIt {
             return FALSE;
         }
         my $sourceType = $objSource->getType();
-        if ($sourceType ne "POSTGRESQL") {
-            ERROR("4ALAMO generation accept only POSTGRESQL sources");
+        if ($sourceType ne "POSTGRESQL" && $sourceType ne "VECTORS") {
+            ERROR("4ALAMO generation accept only POSTGRESQL or VECTORS sources");
             return FALSE;
         }
         push(@{$this{loaded}->{sources}}, $objSource);
@@ -505,6 +505,18 @@ sub doIt {
     my $globalTopOrder = undef;
     my $globalBottomOrder = undef;
     foreach my $s (@{$this{loaded}->{sources}}) {
+
+        if ($s->getType() eq "VECTORS") {
+            if (uc($tms->getSRS()) ne uc($s->getSRS())) {
+                ERROR(sprintf "If one source is typed VECTORS, its SRS have to be the used TMS one (%s <> %s)", uc($tms->getSRS()), uc($s->getSRS()));
+                return FALSE;
+            }
+
+            $params->{process}->{parallelization} = 1;
+            INFO("With a VECTORS source, parallelization have to be 1");
+        }
+
+
         my $topID = $s->getTopID();
         my $topOrder = $tms->getOrderfromID($topID);
         if (! defined $topOrder) {
@@ -551,7 +563,7 @@ sub doIt {
             
             my $ID = $tms->getIDfromOrder($order);
 
-            if (! $this{loaded}->{output_pyramid}->addLevel($ID, $s->getSourceDatabase()) ) {
+            if (! $this{loaded}->{output_pyramid}->addLevel($ID, $s->getSource()) ) {
                 ERROR("Cannot add level $ID");
                 return FALSE;
             }
@@ -599,8 +611,6 @@ sub doIt {
         ERROR("Can not compute forest !");
         return FALSE;
     }
-    
-    DEBUG(sprintf "FOREST (debug export) = %s", $this{loaded}->{forest}->exportForDebug());
 
     #######################
     # Écrire le script principal

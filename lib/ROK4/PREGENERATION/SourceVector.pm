@@ -36,20 +36,20 @@
 ################################################################################
 
 =begin nd
-File: SourceImage.pm
+File: SourceVector.pm
 
-Class: ROK4::PREGENERATION::SourceImage
+Class: ROK4::PREGENERATION::SourceVector
 
-(see libperlauto/Core_SourceImage.png)
+(see libperlauto/Core_SourceVector.png)
 
 Define a data source, with georeferenced image directory.
 
 Using:
     (start code)
-    use ROK4::PREGENERATION::SourceImage;
+    use ROK4::PREGENERATION::SourceVector;
 
-    # SourceImage object creation
-    my $objSourceImage = ROK4::PREGENERATION::SourceImage->new({
+    # SourceVector object creation
+    my $objSourceVector = ROK4::PREGENERATION::SourceVector->new({
         directory => "/home/ign/DATA",
         srs => "EPSG:4326"
     });
@@ -57,16 +57,57 @@ Using:
 
 Attributes:
     PATHIMG - string - Path to images directory.
-    images - <ROK4::Core::GeoImage> array - Georeferenced images' ensemble, found in PATHIMG and subdirectories
+    vectors - <ROK4::Core::GeoVector> array - Vector files, found in PATHIMG and subdirectories
     srs - string - SRS of the georeferenced images
-    bestResImage - <ROK4::Core::GeoImage> - Best resolution image
-    pixel - <ROK4::Core::Pixel> - Pixel components of all images, have to be same for each one.
+    tables - hash - all informations about wanted tables
+|        {
+|            'public.departement' => {
+|                'filter' => '',
+|                'final_name' => 'departement',
+|                'attributes' => {
+|                    'ogc_fid' => {
+|                        'count' => 101,
+|                        'type' => 'integer'
+|                    },
+|                    'nom_dep' => {
+|                        'type' => 'character varying(30)',
+|                        'count' => 101
+|                    },
+|                    'insee_reg' => {
+|                        'type' => 'character varying(2)',
+|                        'count' => 18
+|                    },
+|                    'chf_dep' => {
+|                        'count' => 101,
+|                        'type' => 'character varying(5)'
+|                    },
+|                    'id' => {
+|                        'count' => 101,
+|                        'type' => 'character varying(24)'
+|                    },
+|                    'insee_dep' => {
+|                        'type' => 'character varying(3)',
+|                        'count' => 101
+|                    },
+|                    'nom_dep_m' => {
+|                        'count' => 101,
+|                        'type' => 'character varying(30)'
+|                    }
+|                },
+|                'schema' => 'public',
+|                'geometry' => {
+|                                'name' => 'wkb_geometry',
+|                                'type' => 'MULTIPOLYGON'
+|                                },
+|                'native_name' => 'departement'
+|            }
+|        }
     
 =cut
 
 ################################################################################
 
-package ROK4::PREGENERATION::SourceImage;
+package ROK4::PREGENERATION::SourceVector;
 
 use strict;
 use warnings;
@@ -76,9 +117,7 @@ use List::Util qw(min max);
 
 use File::Path qw(make_path);
 
-use ROK4::Core::GeoImage;
-use ROK4::Core::Pixel;
-
+use ROK4::Core::GeoVector;
 
 ################################################################################
 # Constantes
@@ -98,14 +137,14 @@ END {}
 =begin nd
 Constructor: new
 
-SourceImage constructor. Bless an instance.
+SourceVector constructor. Bless an instance.
 
 Parameters (hash):
-    directory - string - Path to images' directory, to analyze.
-    srs - string - SRS of the georeferenced images
+    directory - string - Path to files' directory, to analyze.
+    srs - string - SRS of the vector files
     
 See also:
-    <_init>, <computeSourceImage>
+    <_init>, <computeSourceVector>
 =cut
 sub new {
     my $class = shift;
@@ -117,11 +156,7 @@ sub new {
         PATHIMG => undef,
         #
         images  => [],
-        srs => undef,
-        #
-        bestResImage => undef,
-        #
-        pixel => undef,
+        srs => undef
     };
 
     bless($this, $class);
@@ -129,7 +164,7 @@ sub new {
     # init. class
     return undef if (! $this->_init($params));
 
-    return undef if (! $this->computeSourceImage());
+    return undef if (! $this->computeSourceVector());
 
     return $this;
 }
@@ -140,8 +175,8 @@ Function: _init
 Checks and stores informations.
 
 Parameters (hash):
-    directory - string - Path to images' directory, to analyze.
-    srs - string - SRS of the georeferenced images
+    directory - string - Path to files' directory, to analyze.
+    srs - string - SRS of the vector files
     
 =cut
 sub _init {
@@ -166,77 +201,54 @@ sub _init {
 ####################################################################################################
 
 =begin nd
-Function: computeSourceImage
+Function: computeSourceVector
 
-Detects all handled files in *PATHIMG* and subdirectories and creates a corresponding <GeoImage> object. Determines data's components and check them.
+Detects all handled files in *PATHIMG* and subdirectories and creates a corresponding <GeoVector> object. Determines data's components and check them.
 
 See also:
-    <getListImages>, <GeoImage::computeInfo>
+    <getListVectors>
 =cut
-sub computeSourceImage {
+sub computeSourceVector {
     my $this = shift;
 
     my $search = {
-        images => [],
+        vectors => [],
     };
 
-    if (! $this->getListImages($this->{PATHIMG}, $search)) {
-        ERROR ("Cannot browse image directory !");
+    if (! $this->getListVectors($this->{PATHIMG}, $search)) {
+        ERROR ("Cannot browse vector directory !");
         return FALSE;
     }
 
-    my @listGeoImagePath = @{$search->{images}};
-    if (scalar @listGeoImagePath == 0) {
-        ERROR ("No handled image found in ".$this->{PATHIMG});
+    my @paths = @{$search->{vectors}};
+    if (scalar @paths == 0) {
+        ERROR ("No handled files found in ".$this->{PATHIMG});
         return FALSE;
     }
-
-    my $badRefCtrl = 0;
     
-    foreach my $filepath (@listGeoImagePath) {
+    foreach my $filepath (@paths) {
 
-        my $objGeoImage = ROK4::Core::GeoImage->new($filepath, $this->{srs});
+        my $objGeoVector = ROK4::Core::GeoVector->new($filepath, $this->{srs});
 
-        if (! defined $objGeoImage) {
-            ERROR ("Can not load image source ('$filepath') !");
+        if (! defined $objGeoVector) {
+            ERROR ("Can not load vector file ('$filepath') !");
             return FALSE;
         }
 
-        # On récupère les caractéristiques de l'image APRÈS traitement, car c'est sur ces images que nous allons travailler
-        my $pix = $objGeoImage->getPixel();
-        if (! defined $pix) {
-            ERROR ("Can not read image pixel info ('$filepath') !");
+        my $table = $objGeoVector->getTable();
+
+        if (exists $this->{$table->{final_name}}) {
+            ERROR (sprintf "Several vector files in the VECTORS source own the same table name '%s'", $table->{final_name});
             return FALSE;
         }
+        
+        $this->{$table->{final_name}} = $table;
 
-        if (! defined $this->{pixel}) {
-            # we read the first image, components are empty. This first image will be the reference.
-            $this->{pixel} = $pix;
-        } else {
-            # we have already values. We must have the same components for all images
-            if (! $pix->equals($this->{pixel})) {
-                ERROR ("All images must have same components. This image ('$filepath') is different !");
-                return FALSE;
-            }
-        }
-
-        if ($objGeoImage->getXmin() == 0  && $objGeoImage->getYmax() == 0) {
-            $badRefCtrl++;
-            if ($badRefCtrl>1){
-                WARN (sprintf "More than one image are at 0,0 position. Probably lost of georef file (tfw,...) for file : %s", $filepath);
-            }
-        }
-
-        if (! defined $this->{bestResImage} || $objGeoImage->getXres() < $this->{bestResImage}->getXres() 
-                                            || $objGeoImage->getYres() < $this->{bestResImage}->getYres()) {
-            $this->{bestResImage} = $objGeoImage;
-        }
-
-        push(@{$this->{images}}, $objGeoImage);
+        push(@{$this->{vectors}}, $objGeoVector);
     }
 
-    if (scalar(@{$this->{images}}) == 0) {
-        ERROR (sprintf "Can not found image source in '%s' !",$this->{PATHIMG});
+    if (scalar(@{$this->{vectors}}) == 0) {
+        ERROR (sprintf "Can not found vector source in '%s' !",$this->{PATHIMG});
         return FALSE;
     }
 
@@ -244,18 +256,18 @@ sub computeSourceImage {
 }
 
 =begin nd
-Function: getListImages
+Function: getListVectors
 
-Recursive method to browse a directory and list all handled file. Returns an hash containing the image file path's array.
+Recursive method to browse a directory and list all handled file. Returns an hash containing the vector file path's array.
 | {
-|     images => [...],
+|     vectors => [...],
 | };
 
 Parameters (list):
     directory - string - Path to directory, to browse.
-    search - hash - Hash reference, to store images' paths.
+    search - hash - Hash reference, to store vector' paths.
 =cut  
-sub getListImages {
+sub getListVectors {
     my $this = shift;
     my $directory = shift;
     my $search = shift;
@@ -272,16 +284,15 @@ sub getListImages {
 
         # Si on a à faire à un dossier, on appelle récursivement la méthode pourle parcourir
         if ( -d $entry) {
-            if (! $this->getListImages($entry, $search)) {
+            if (! $this->getListVectors($entry, $search)) {
                 return FALSE;
             }
         }
 
-        # Si le fichier n'a pas l'extension TIFF, JP2, BIL, ZBIL ou PNG, on ne le traite pas
-        next if ( $entry !~ /.*\.(tif|tiff)$/i && $entry !~ /.*\.(png)$/i && $entry !~ /.*\.(jp2)$/i && $entry !~ /.*\.(bil|zbil)$/i);
+        # Si le fichier n'a pas l'extension GEOBUF, JSON ou GEOJSON, on ne le traite pas
+        next if ( $entry !~ /.*\.(geojson)$/i && $entry !~ /.*\.(json)$/i && $entry !~ /.*\.(geobuf)$/i);
 
-        # On a à faire à un fichier avec l'extension TIFF/PNG/JPEG2000/BIL, on l'ajoute au tableau
-        push @{$search->{images}}, $entry;
+        push @{$search->{vectors}}, $entry;
     }
 
     return TRUE;
@@ -290,20 +301,20 @@ sub getListImages {
 =begin nd
 Function: computeBBox
 
-Calculate extrem limits of images, in the source SRS.
+Calculate extrem limits of vectors, in the source SRS.
 
 Returns a double list : (xMin,yMin,xMax,yMax).
 =cut
 sub computeBBox {
     my $this = shift;
 
-    my ($xmin,$ymin,$xmax,$ymax) = $this->{images}->[0]->getBBox();
+    my ($xmin,$ymin,$xmax,$ymax) = $this->{vectors}->[0]->getBBox();
 
-    foreach my $objImage (@{$this->{images}}) {
-        $xmin = min($xmin, $objImage->getXmin());
-        $xmax = max($xmax, $objImage->getXmax());
-        $ymin = min($ymin, $objImage->getYmin());
-        $ymax = max($ymax, $objImage->getYmax());
+    foreach my $objVector (@{$this->{vectors}}) {
+        $xmin = min($xmin, $objVector->getXmin());
+        $xmax = max($xmax, $objVector->getXmax());
+        $ymin = min($ymin, $objVector->getYmin());
+        $ymax = max($ymax, $objVector->getYmax());
     }
 
     return ($xmin,$ymin,$xmax,$ymax);
@@ -319,27 +330,21 @@ sub getSRS {
     return $this->{srs};
 }
 
-# Function: getPixel
-sub getPixel {
-    my $this = shift;
-    return $this->{pixel};
-}
-
-# Function: getBestResImage
-sub getBestResImage {
-    my $this = shift;
-    return $this->{bestResImage};
-}
-
-# Function: getImages
-sub getImages {
+# Function: getPathsList
+sub getPathsList {
     my $this = shift;
     # copy !
-    my @images;
-    foreach (@{$this->{images}}) {
-        push @images, $_;
+    my @vectors;
+    foreach my $v (@{$this->{vectors}}) {
+        push(@vectors, $v->getCompletePath());
     }
-    return @images;
+    return join(" ", @vectors);
+}
+
+# Function: getTables
+sub getTables {
+    my $this = shift;
+    return $this->{tables};
 }
 
 1;
