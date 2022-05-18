@@ -382,7 +382,7 @@ sub _load {
                 }
             }
 
-            elsif ($count <= 50) {
+            elsif ($count <= 100) {
                 my @distincts = $database->get_distinct_values($hash->{schema}, $hash->{native_name}, $a);
                 $analysis->{$a}->{values} = \@distincts;
             }
