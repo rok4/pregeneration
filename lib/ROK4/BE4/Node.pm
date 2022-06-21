@@ -540,7 +540,7 @@ sub cache2work {
     my $this = shift;
     
     #### Rappatriement de l'image de donnée ####
-    
+
     $this->{script}->write(sprintf "PullSlab %s %s.tif\n", $this->getSlabPath("DATA", FALSE), $this->{bgImageBasename});
     
     #### Rappatriement du masque de donnée (si présent) ####

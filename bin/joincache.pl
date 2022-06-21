@@ -372,9 +372,6 @@ sub load {
     if ($this{params}->{pyramid}->{storage}->{type} eq "FILE") {
         # Dans le cas du stockage fichier, la profondeur d'arborescence est la même que pour les sources
         $this{params}->{pyramid}->{storage}->{depth} = $refPyramid->getDirDepth();
-    } else {
-        # Dans le cas du stockage objet, la racine de stockage est la même que pour les sources
-        $this{params}->{pyramid}->{storage}->{root} = $refPyramid->getStorageRoot();
     }
 
     $this{loaded}->{output_pyramid} = ROK4::Core::PyramidRaster->new("VALUES", $this{params}->{pyramid} );

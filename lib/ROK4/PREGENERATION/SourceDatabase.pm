@@ -371,6 +371,11 @@ sub _load {
             };
 
             my $count = $database->get_distinct_values_count($hash->{schema}, $hash->{native_name}, $a);
+            if (! defined $count) {
+                ERROR("Cannot get count of distinct value of attribute $a in table $table");
+                return FALSE;
+            }
+
             $analysis->{$a}->{count} = $count;
 
             my @numerics = ("integer", "real", "double precision", "numeric");

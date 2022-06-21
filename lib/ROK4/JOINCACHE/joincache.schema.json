@@ -104,7 +104,7 @@
         "pyramid": {
             "type": "object",
             "description": "Génération d'une nouvelle pyramide comme produit de fusion",
-            "required": ["name", "nodata", "compression"],
+            "required": ["name", "nodata", "compression", "storage"],
             "properties": {
                 "name": {
                     "type": "string",
@@ -113,11 +113,10 @@
                 "storage": {
                     "type": "object",
                     "required": ["root"],
-                    "description": "La précision du stockage n'est utile que dans le cas d'une génération sur un stockage FILE",
                     "properties": {
                         "root": {
                             "type": "string",
-                            "description": "Racine de stockage : uniquement dans le cas d'un stockage FILE des pyramides, dossier d'écriture de la pyramides en sortie"
+                            "description": "Racine de stockage : un dossier pour le type FILE, le nom du pool en CEPH, le nom du bucket en S3 et le nom du container en SWIFT"
                         }
                     }
 

@@ -212,7 +212,7 @@ PushSlab () {
     done
 
     if [[ "${empty}" = "0" ]]; then
-        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -bucket ${PYR_BUCKET} ${PYR_PREFIX}/$imgName
+        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow s3://${PYR_BUCKET}/${PYR_PREFIX}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         echo "0/$imgName" >> ${TMP_LIST_FILE}
     fi
@@ -256,7 +256,7 @@ PushSlab () {
     done
 
     if [[ "${empty}" = "0" ]]; then
-        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -container ${PYR_CONTAINER} ${PYR_PREFIX}/$imgName
+        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow swift://${PYR_CONTAINER}/${PYR_PREFIX}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         echo "0/$imgName" >> ${TMP_LIST_FILE}
     fi
@@ -301,7 +301,7 @@ PushSlab () {
     done
 
     if [[ "${empty}" = "0" ]]; then
-        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -pool ${PYR_POOL} ${PYR_PREFIX}/$imgName
+        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow ceph://${PYR_POOL}/${PYR_PREFIX}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         echo "0/$imgName" >> ${TMP_LIST_FILE}
     fi
@@ -350,7 +350,7 @@ PushSlab () {
         local dir=`dirname ${PYR_DIR}/$imgName`
         if [ ! -d $dir ] ; then mkdir -p $dir ; fi
 
-        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow ${PYR_DIR}/$imgName
+        pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow file://${PYR_DIR}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         echo "0/$imgName" >> ${TMP_LIST_FILE}
     fi

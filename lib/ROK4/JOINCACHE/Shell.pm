@@ -184,9 +184,6 @@ LinkSlab () {
         return
     fi
 
-    # On retire le conteneur des entrées
-    target=`echo -n "$target" | sed "s#^${PYR_BUCKET}/##"`
-
     resource="/${PYR_BUCKET}/${PYR_PREFIX}/${slabName}"
     contentType="application/octet-stream"
     dateValue=`TZ=GMT date -R`
@@ -228,13 +225,13 @@ PushSlab () {
         return
     fi
 
-    work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -bucket ${PYR_BUCKET} ${PYR_PREFIX}/$imgName
+    work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} s3://${PYR_BUCKET}/${PYR_PREFIX}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     echo "0/$imgName" >> ${TMP_LIST_FILE}
     rm -f ${TMP_DIR}/$workImgName
 
     if [ $workMskName ] ; then
-        work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -bucket ${PYR_BUCKET} ${PYR_PREFIX}/$mskName
+        work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} s3://${PYR_BUCKET}/${PYR_PREFIX}/$mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         echo "0/$mskName" >> ${TMP_LIST_FILE}
         rm -f ${TMP_DIR}/$workMskName
@@ -251,10 +248,7 @@ PullSlab () {
         return
     fi
 
-    # On retire le conteneur du input
-    input=`echo -n "$input" | sed "s#${PYR_BUCKET}/##"`
-
-    cache2work -c zip -bucket ${PYR_BUCKET} $input ${TMP_DIR}/$output
+    cache2work -c zip s3://$input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 STORAGEFUNCTIONS
@@ -267,9 +261,6 @@ LinkSlab () {
     if [[ "${work}" == "0" ]]; then
         return
     fi
-
-    # On retire le conteneur des entrées
-    target=`echo -n "$target" | sed "s#^${PYR_CONTAINER}/##"`
 
     GetSwiftToken
 
@@ -303,13 +294,13 @@ PushSlab () {
         return
     fi
 
-    work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} ${PYR_PREFIX}/$imgName
+    work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} swift://${PYR_CONTAINER}/${PYR_PREFIX}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     echo "0/$imgName" >> ${TMP_LIST_FILE}
     rm -f ${TMP_DIR}/$workImgName
 
     if [ $workMskName ] ; then
-        work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -container ${PYR_CONTAINER} ${PYR_PREFIX}/$mskName
+        work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} swift://${PYR_CONTAINER}/${PYR_PREFIX}/$mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         echo "0/$mskName" >> ${TMP_LIST_FILE}
         rm -f ${TMP_DIR}/$workMskName
@@ -326,10 +317,7 @@ PullSlab () {
         return
     fi
 
-    # On retire le conteneur du input
-    input=`echo -n "$input" | sed "s#${PYR_CONTAINER}/##"`
-
-    cache2work -c zip -container ${PYR_CONTAINER} $input ${TMP_DIR}/$output
+    cache2work -c zip swift://$input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 STORAGEFUNCTIONS
@@ -342,9 +330,6 @@ LinkSlab () {
     if [[ "${work}" == "0" ]]; then
         return
     fi
-
-    # On retire le pool des entrées
-    target=`echo -n "$target" | sed "s#^${PYR_POOL}/##"`
 
     echo -n "SYMLINK#${target}" | rados -p ${PYR_POOL} put ${PYR_PREFIX}/$slabName /dev/stdin
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -369,13 +354,13 @@ PushSlab () {
         return
     fi
 
-    work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -pool ${PYR_POOL} ${PYR_PREFIX}/$imgName
+    work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} ceph://${PYR_POOL}/${PYR_PREFIX}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     echo "0/$imgName" >> ${TMP_LIST_FILE}
     rm -f ${TMP_DIR}/$workImgName
 
     if [ $workMskName ] ; then
-        work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -pool ${PYR_POOL} ${PYR_PREFIX}/$mskName
+        work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} ceph://${PYR_POOL}/${PYR_PREFIX}/$mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         echo "0/$mskName" >> ${TMP_LIST_FILE}
         rm -f ${TMP_DIR}/$workMskName
@@ -392,10 +377,7 @@ PullSlab () {
         return
     fi
 
-    # On retire le pool du input
-    input=`echo -n "$input" | sed "s#${PYR_POOL}/##"`
-
-    cache2work -c zip -pool ${PYR_POOL} $input ${TMP_DIR}/$output
+    cache2work -c zip ceph://$input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 STORAGEFUNCTIONS
@@ -442,7 +424,7 @@ PushSlab () {
     if [ -r ${TMP_DIR}/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
 
-    work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} ${PYR_DIR}/$imgName
+    work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} file://${PYR_DIR}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     echo "0/$imgName" >> ${TMP_LIST_FILE}
     rm -f ${TMP_DIR}/$workImgName
@@ -454,7 +436,7 @@ PushSlab () {
         if [ -r ${TMP_DIR}/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
         if [ ! -d $dir ] ; then mkdir -p $dir ; fi
 
-        work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} ${PYR_DIR}/$mskName
+        work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} file://${PYR_DIR}/$mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         echo "0/$mskName" >> ${TMP_LIST_FILE}
         rm -f ${TMP_DIR}/$workMskName
@@ -471,7 +453,7 @@ PullSlab () {
         return
     fi
 
-    cache2work -c zip $input ${TMP_DIR}/$output
+    cache2work -c zip file://$input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
@@ -686,6 +668,7 @@ sub getScriptInitialization {
     elsif ($pyramid->getStorageType() eq "S3") {
         $string .= sprintf "PYR_BUCKET=%s\n", $pyramid->getDataBucket();
         $string .= sprintf "PYR_PREFIX=%s\n", $pyramid->getName();
+        $string .= "HOST=\$(echo \${ROK4_S3_URL} | sed 's!.*://!!' | sed 's!:[0-9]\+\$!!')\n";
         $string .= $S3_STORAGE_FUNCTIONS;
         $string .= $ROK4::Core::Shell::S3_STORE_LIST;
     }
