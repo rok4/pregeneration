@@ -16,7 +16,7 @@ jobs:
           perl Makefile.PL DESTDIR=build INSTALL_BASE=/usr VERSION=${{ github.ref_name }}
           make
           make injectversion
-          make install
+          make pure_install
 
       - name: Build debian package
         id: build_debian
