@@ -40,7 +40,7 @@ File: Node.pm
 
 Class: ROK4::FOURALAMO::Node
 
-(see libperlauto/Core_Node.png)
+(see libperlauto/ROK4_Core_Node.png)
 
 Describe a node of a <ROK4::PREGENERATION::QTree> or a <ROK4::PREGENERATION::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
 

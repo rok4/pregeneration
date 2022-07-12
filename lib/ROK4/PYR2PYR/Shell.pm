@@ -40,7 +40,7 @@ File: Shell.pm
 
 Class: ROK4::PYR2PYR::Shell
 
-(see libperlauto/PYR2PYR_Shell.png)
+(see libperlauto/ROK4_PYR2PYR_Shell.png)
 
 Provides functions to generate slab for 4head tool.
 

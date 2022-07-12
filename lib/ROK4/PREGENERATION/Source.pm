@@ -40,7 +40,7 @@ File: DataSource.pm
 
 Class: ROK4::PREGENERATION::Source
 
-(see libperlauto/Core_DataSource.png)
+(see libperlauto/ROK4_Core_DataSource.png)
 
 Manage a data source, physical (image files) or virtual (WMS server) or both.
 

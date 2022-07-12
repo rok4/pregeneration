@@ -40,7 +40,7 @@ File: Node.pm
 
 Class: ROK4::BE4::Node
 
-(see libperlauto/BE4_Node.png)
+(see libperlauto/ROK4_BE4_Node.png)
 
 Describe a node of a <ROK4::PREGENERATION::QTree> or a <ROK4::PREGENERATION::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
 
@@ -468,7 +468,7 @@ Function: mergeNtiff
 
 Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
 
-(see ROK4GENERATION/tools/mergeNtiff.png)
+(see mergeNtiff.png)
 
 Returns:
     TRUE if success, FALSE if failure
@@ -531,7 +531,7 @@ Function: cache2work
 
 Copy slab from cache to work directory and transform (work format : untiled, zip-compression). Use the 'PullSlab' bash function.
 
-(see ROK4GENERATION/tools/cache2work.png)
+(see cache2work.png)
 
 Returns:
     TRUE if success, FALSE if failure
@@ -558,7 +558,7 @@ Function: work2cache
 
 Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (work2cache).
 
-(see ROK4GENERATION/tools/work2cache.png)
+(see work2cache.png)
 
 Returns:
     TRUE if success, FALSE if failure
@@ -654,7 +654,7 @@ Use the 'Merge4tiff' bash function.
 |              =  resultImg
 |     i3  i4
 
-(see ROK4GENERATION/tools/merge4tiff.png)
+(see merge4tiff.png)
 
 Returns:
     TRUE if success, FALSE if failure
@@ -718,7 +718,7 @@ Function: decimateNtiff
 
 Use the 'decimateNtiff' bash function. Write a configuration file, with sources.
 
-(see ROK4GENERATION/tools/decimateNtiff.png)
+(see decimateNtiff.png)
 
 Example:
 |    DecimateNtiff 12_26_17.txt

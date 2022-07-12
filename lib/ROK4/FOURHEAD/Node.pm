@@ -40,7 +40,7 @@ File: Node.pm
 
 Class: ROK4::FOURHEAD::Node
 
-(see libperlauto/FOURHEAD_Node.png)
+(see libperlauto/ROK4_FOURHEAD_Node.png)
 
 Using:
     (start code)

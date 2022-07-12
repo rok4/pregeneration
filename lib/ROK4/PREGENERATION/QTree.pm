@@ -40,11 +40,11 @@ File: QTree.pm
 
 Class: ROK4::PREGENERATION::QTree
 
-(see libperlauto/Core_QTree.png)
+(see libperlauto/ROK4_Core_QTree.png)
 
 Representation of a quad tree image pyramid : pyramid's image = <ROK4::BE4::Node> or <ROK4::FOURALAMO::Node>
 
-(see ROK4GENERATION/QTreeTMS.png)
+(see QTreeTMS.png)
 
 To generate this kind of graph, we use :
     - *jobNumber* scripts : to generate and format image from the bottom level to the cut level.
@@ -54,7 +54,7 @@ To generate this kind of graph, we use :
 
 Organization in the <ROK4::PREGENERATION::Forest> scripts' array :
 
-(see ROK4GENERATION/script_QTree.png)
+(see script_QTree.png)
 
 As a tree, a node has just one parent. As a QUAD tree, the parent belong to the above level and a node has 4 children at most.
 
@@ -514,7 +514,7 @@ Function: identifyAboveNodes
 
 Calculate all nodes in above levels. We generate a above level node if one or more children are generated.
 
-(see ROK4GENERATION/aboveNodes_QTree.png)
+(see aboveNodes_QTree.png)
 =cut
 sub identifyAboveNodes {
     my $this = shift;

@@ -44,9 +44,10 @@ Stores parameters and builds WMS request.
 
 Attributes:
     URL - string -  Left part of a WMS request, before the *?*.
-    PARAMETERS - string - Parameter *VERSION* of a WMS request : "1.3.0".
+    FULLURL - string -  Entire URL, with parameters
+    FORMAT - string - Downloaded image format. Default: "image/jpeg".
+    PARAMETERS - string - Additionnal parameters, like STYLES. Optionnal
     LAYERS - string - Layer name to harvest, parameter *LAYERS* of a WMS request.
-    extension - string - Requested file extension.
     min_size - integer - Used to remove too small harvested images (full of nodata), in bytes. Can be zero (no limit).
     max_width - integer - Max image's pixel width which will be harvested, can be undefined (no limit).
     max_height - integer - Max image's pixel height which will be harvested, can be undefined (no limit).
@@ -95,7 +96,6 @@ sub new {
         PARAMETERS => undef,
         FORMAT => "image/jpeg",
         LAYERS => undef,
-        extension => undef,
         min_size => 0,
         max_width => undef,
         max_height => undef

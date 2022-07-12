@@ -10,30 +10,6 @@ Il est possible que les scripts BASH sachent faire de la reprise sur erreur. Dan
 
 De même, un fichier .prog à côté du script peut être mis à jour avec le pourcentage de progression (calculé à partir des lignes du script).
 
-- [Installation depuis le paquet debian](#installation-depuis-le-paquet-debian)
-- [Installation depuis les sources](#installation-depuis-les-sources)
-- [Variables d'environnement utilisées dans les librairies ROK4::Core](#variables-denvironnement-utilisées-dans-les-librairies-rok4core)
-- [Présentation des outils](#présentation-des-outils)
-  - [BE4](#be4)
-    - [Usage](#usage)
-    - [Détails](#détails)
-    - [Exemples de configuration](#exemples-de-configuration)
-  - [JOINCACHE](#joincache)
-    - [Usage](#usage-1)
-    - [Détails](#détails-1)
-    - [Exemples de configuration](#exemples-de-configuration-1)
-  - [4ALAMO](#4alamo)
-    - [Usage](#usage-2)
-    - [Détails](#détails-2)
-    - [Exemples de configuration](#exemples-de-configuration-2)
-  - [4HEAD](#4head)
-      - [Commande](#commande)
-      - [Options](#options)
-  - [PYR2PYR](#pyr2pyr)
-    - [Usage](#usage-3)
-    - [Détails](#détails-3)
-    - [Exemples de configuration](#exemples-de-configuration-3)
-
 ## Installation depuis le paquet debian
 
 Télécharger les paquets sur GitHub : 
@@ -42,8 +18,8 @@ Télécharger les paquets sur GitHub :
 * [Les outils](https://github.com/rok4/pregeneration/releases/)
 
 ```
-apt install ./librok4-core-perl_<version>_all.deb
-apt install ./rok4-pregeneration_<version>_all.deb
+apt install ./librok4-core-perl-<version>-linux-all.deb
+apt install ./rok4-pregeneration-<version>-linux-all.deb
 ```
 
 ## Installation depuis les sources
@@ -332,7 +308,7 @@ Génération d'une pyramide par fusion de 2 pyramides CEPH, avec conversion des 
 
 ### 4ALAMO
 
-L'outil 4ALAMO génèrent une pyramide vecteur à partir d'une base de données PostgreSQL. Ils permettent de mettre à jour une pyramide vecteur existante.
+L'outil 4ALAMO génèrent une pyramide vecteur à partir d'une base de données PostgreSQL ou de fichiers vecteurs. Ils permettent de mettre à jour une pyramide vecteur existante.
 
 Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
@@ -359,10 +335,10 @@ Outils externes utilisés :
 #### Détails
 
 _Étape 1_
-![4ALAMO étape 1](./docs/images/ROK4GENERATION/4alamo_part1.png)
+![4ALAMO étape 1](./docs/images/4alamo_part1.png)
 
 _Étape 2_
-![4ALAMO étape 2](./docs/images/ROK4GENERATION/4alamo_part2.png)
+![4ALAMO étape 2](./docs/images/4alamo_part2.png)
 
 #### Exemples de configuration
 

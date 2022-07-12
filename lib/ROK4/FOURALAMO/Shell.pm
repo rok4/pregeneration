@@ -40,7 +40,7 @@ File: Shell.pm
 
 Class: ROK4::FOURALAMO::Shell
 
-(see libperlauto/FOURALAMO_Shell.png)
+(see libperlauto/ROK4_FOURALAMO_Shell.png)
 
 Configure and assemble commands used to generate vector pyramid's slabs.
 

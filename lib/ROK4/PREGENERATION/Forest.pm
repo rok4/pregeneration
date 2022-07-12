@@ -40,11 +40,11 @@ File: Forest.pm
 
 Class: ROK4::PREGENERATION::Forest
 
-(see libperlauto/Core_Forest.png)
+(see libperlauto/ROK4_Core_Forest.png)
 
 Creates and manages all graphs, <NNGraph> and <QTree>.
 
-(see ROK4GENERATION/forest.png)
+(see forest.png)
 
 We have several kinds of graphs and their using have to be transparent for the forest. That's why we must define functions for all graph's types (as an interface) :
     - computeYourself() : <NNGraph::computeYourself>, <QTree::computeYourself>

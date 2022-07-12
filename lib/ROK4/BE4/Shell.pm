@@ -40,13 +40,13 @@ File: Shell.pm
 
 Class: ROK4::BE4::Shell
 
-(see libperlauto/BE4_Shell.png)
+(see libperlauto/ROK4_BE4_Shell.png)
 
 Configure and assemble commands used to generate raster pyramid's slabs.
 
 All schemes in this page respect this legend :
 
-(see ROK4GENERATION/tools/formats.png)
+(see formats.png)
 
 Using:
     (start code)
