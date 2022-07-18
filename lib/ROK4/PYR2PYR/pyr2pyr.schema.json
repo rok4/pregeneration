@@ -79,43 +79,43 @@
                     }
                 }
             }
-        }
-    },
-    "process": {
-        "type": "object",
-        "description": "Paramètres de traitement",
-        "required": ["directories", "parallelization"],
-        "properties": {
-            "directories": {
-                "type": "object",
-                "description": "Dossiers de génération",
-                "required": ["scripts", "local_tmp", "shared_tmp"],
-                "properties": {
-                    "local_tmp": {
-                        "type": "string",
-                        "description": "Dossier temporaire de génération individuel de chaque script de génération"
-                    },
-                    "shared_tmp": {
-                        "type": "string",
-                        "description": "Dossier temporaire de génération partagé entre les scripts de prégénération et génération"
+        },
+        "process": {
+            "type": "object",
+            "description": "Paramètres de traitement",
+            "required": ["directories", "parallelization"],
+            "properties": {
+                "directories": {
+                    "type": "object",
+                    "description": "Dossiers de génération",
+                    "required": ["scripts", "local_tmp", "shared_tmp"],
+                    "properties": {
+                        "local_tmp": {
+                            "type": "string",
+                            "description": "Dossier temporaire de génération individuel de chaque script de génération"
+                        },
+                        "shared_tmp": {
+                            "type": "string",
+                            "description": "Dossier temporaire de génération partagé entre les scripts de prégénération et génération"
+                        }
                     }
+                },
+                "parallelization": {
+                    "type": "integer",
+                    "description": "Niveau de parallélisation, défini le nombre de scripts de génération exécutables en parallèle",
+                    "minimum": 1
+                },
+                "follow_links": {
+                    "type": "boolean",
+                    "description": "Doit-on suivre les liens symboliques lors de la copie",
+                    "default": false
+                },
+                "slab_limit": {
+                    "type": "integer",
+                    "description": "Taille de dalle sous laquelle on ne recopie pas",
+                    "minimum": 0,
+                    "default": 0
                 }
-            },
-            "parallelization": {
-                "type": "integer",
-                "description": "Niveau de parallélisation, défini le nombre de scripts de génération exécutables en parallèle",
-                "minimum": 1
-            },
-            "follow_links": {
-                "type": "boolean",
-                "description": "Doit-on suivre les liens symboliques lors de la copie",
-                "default": false
-            },
-            "slab_limit": {
-                "type": "integer",
-                "description": "Taille de dalle sous laquelle on ne recopie pas",
-                "minimum": 0,
-                "default": 0
             }
         }
     }
