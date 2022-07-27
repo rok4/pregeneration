@@ -239,7 +239,7 @@ PullSlab () {
         curl_options="-k"
     fi
 
-    curl $curl_options  --fail -X GET -o "${PYR_DIR}/$output" \
+    curl $curl_options  --fail -L -X GET -o "${PYR_DIR}/$output" \
      -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
      -H "Content-Type: ${contentType}" \
@@ -277,7 +277,7 @@ PushSlab () {
         curl_options="-k"
     fi
 
-    curl $curl_options  --fail -X PUT -T "$input" \
+    curl $curl_options  --fail -L -X PUT -T "$input" \
      -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
      -H "Content-Type: ${contentType}" \
@@ -314,7 +314,7 @@ PushSlab () {
         curl_options="-k"
     fi
 
-    curl $curl_options  --fail -X PUT -T "$input"  -H "${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+    curl $curl_options  --fail -L -X PUT -T "$input"  -H "${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${output}" >> ${TMP_LIST_FILE}
@@ -341,7 +341,7 @@ PushSlab () {
     if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
         curl_options="-k"
     fi
-    curl $curl_options  --fail -X PUT -T "${TMP_DIR}/slab.tmp"  -H "${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+    curl $curl_options  --fail -L -X PUT -T "${TMP_DIR}/slab.tmp"  -H "${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${output}" >> ${TMP_LIST_FILE}

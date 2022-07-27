@@ -370,7 +370,7 @@ sub _load {
                 type => $native_atts->{$a}
             };
 
-            my $count = $database->get_distinct_values_count($hash->{schema}, $hash->{native_name}, $a);
+            my $count = $database->get_distinct_values_count($hash->{schema}, $hash->{native_name}, $a, $hash->{filter});
             if (! defined $count) {
                 ERROR("Cannot get count of distinct value of attribute $a in table $table");
                 return FALSE;
@@ -380,7 +380,7 @@ sub _load {
 
             my @numerics = ("integer", "real", "double precision", "numeric");
             if (defined ROK4::Core::Array::isInArray($native_atts->{$a}, @numerics)) {
-                my ($min, $max) = $database->get_min_max_values($hash->{schema}, $hash->{native_name}, $a);
+                my ($min, $max) = $database->get_min_max_values($hash->{schema}, $hash->{native_name}, $a, $hash->{filter});
                 if (defined $min) {
                     $analysis->{$a}->{min} = $min;
                     $analysis->{$a}->{max} = $max;
@@ -388,7 +388,7 @@ sub _load {
             }
 
             elsif ($count <= 100) {
-                my @distincts = $database->get_distinct_values($hash->{schema}, $hash->{native_name}, $a);
+                my @distincts = $database->get_distinct_values($hash->{schema}, $hash->{native_name}, $a, $hash->{filter});
                 $analysis->{$a}->{values} = \@distincts;
             }
         }
