@@ -425,7 +425,7 @@ sub identifyBottomNodes {
             }
         }
     } elsif (defined $datasource->getExtent() ) {
-        # We have just a WMS service as source. We use extent to determine bottom tiles
+        # We have just a WMS service or POSTGRESQL database as source. We use extent to determine bottom tiles
         my $convertExtent = ROK4::Core::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $this->{ct_source_pyramid});
         if (! defined $convertExtent) {
             ERROR(sprintf "Cannot convert extent for the datasource");
@@ -620,7 +620,7 @@ sub computeBranch {
     my @childList = $this->getChildren($node);
 
     if (ref ($this->{pyramid}) eq "ROK4::Core::PyramidVector") {
-        # En vecteur, un noeud du niveau du haut lance un tippecanoe qui va générer 
+        # En vecteur, un noeud du niveau du haut lance un tippecanoe ou un trex qui va générer 
         # toutes les tuiles jusqu'au niveau du bas. On parcours ensuite tous les noeuds de la branche
         # pour lancer la mise en dalle ROK4
 
@@ -756,7 +756,7 @@ Function: computeTopImage
 
 Treats a top node for a vector pyramid : write code.
 
-The call to ogr2ogr extract all data contained in the node. The call to tippecanoe generate all tiles below this node
+The call to ogr2ogr extract all data contained in the node, only if POSTGRESQL datasource and TIPPECANOE as generator. The call to tippecanoe or trex generate all tiles below this node
 
 Finally the call to pbf2cache generate the vector slab.
 
@@ -769,7 +769,7 @@ sub computeTopImage {
     my $this = shift;
     my $node = shift;
      
-    if ($this->getDataSource()->getType() eq "POSTGRESQL") {
+    if ($this->getDataSource()->getType() eq "POSTGRESQL" && $this->getDataSource()->getGenerator() eq "TIPPECANOE") {
         if (! $node->makeJsons($this->getDataSource())) {
             ERROR(sprintf "Cannot compose ogr2ogrs command for the node %s.",$node->getWorkBaseName());
             return FALSE;

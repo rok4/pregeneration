@@ -50,16 +50,27 @@
                         "type": "string",
                         "description": "Niveau du TMS de la pyramide en sortie jusqu'auquel la source sera utilisée"
                     },
-                    "tippecanoe_options": {
-                        "type": "string",
-                        "description": "Options tippecanoe utilisées",
-                        "default": ""
+                    "generator": {
+                        "type": "object",
+                        "description": "Moteur de génération à utiliser et options",
+                        "required": ["name"],
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Nom du moteur",
+                                "enum": ["TIPPECANOE", "TREX"]
+                            },
+                            "options": {
+                                "type": "string",
+                                "description": "Options du moteur"
+                            }
+                        }
                     },
                     "source": {
                         "oneOf": [{
                             "type": "object",
                             "description": "Base PostgreSQL comme source de données",
-                            "required": ["type", "tables", "db", "area", "srs"],
+                            "required": ["type", "tables", "db", "srs"],
                             "properties": {
                                 "type": {
                                     "type": "string",

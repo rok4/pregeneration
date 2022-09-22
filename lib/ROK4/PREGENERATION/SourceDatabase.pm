@@ -53,6 +53,7 @@ Attributes:
     dbname - string - postgis database name
     username - string - postgis server user
     password - string - postgis server user's password
+    srid - string - Data system reference ID
     tables - hash - all informations about wanted tables
 |        {
 |            'public.departement' => {
@@ -130,6 +131,8 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
+use List::Util qw(min max);
+
 use ROK4::Core::Database;
 use ROK4::Core::Array;
 
@@ -205,6 +208,8 @@ sub new {
         dbname => undef,
         username => undef,
         password => undef,
+
+        srid => undef,
         tables => {}
     };
 
@@ -337,7 +342,7 @@ sub _load {
             return FALSE;
         }
 
-        my ($geomname, $geomtype) = $database->get_geometry_column($hash->{schema}, $hash->{native_name});
+        my ($geomname, $geomtype, $geomsrid) = $database->get_geometry_column($hash->{schema}, $hash->{native_name});
         if (! defined $geomname) {
             ERROR("No geometry column in table $table");
             return FALSE;
@@ -345,8 +350,13 @@ sub _load {
 
         $hash->{geometry} = {
             type => $geomtype,
-            name => $geomname
+            name => $geomname,
+            srid => $geomsrid
         };
+        $this->{srid} = $geomsrid;
+
+        my @bbox = $database->get_extent($hash->{schema}, $hash->{native_name}, $hash->{geometry}->{name});
+        $hash->{geometry}->{bbox} = \@bbox;
 
         my $native_atts = $database->get_attributes_hash($hash->{schema}, $hash->{native_name});
         
@@ -418,6 +428,15 @@ sub getInfos {
     return $url;
 }
 
+
+=begin nd
+Function: getSrid
+=cut
+sub getSrid {
+    my $this = shift;
+    return $this->{srid};
+}
+
 =begin nd
 Function: getSqlExports
 
@@ -449,6 +468,81 @@ sub getSqlExports {
     }
 
     return @sqls;
+}
+
+=begin nd
+Function: getTrexConfiguration
+
+Return a string configuring datasource and tilesets for Trex tile generator
+=cut
+sub getTrexConfiguration {
+    my $this = shift;
+
+    my $result = "\n[[datasource]]\nname = \"dbconn\"\ndefault = true\n";
+    $result .= sprintf "dbconn = \"postgresql://%s:%s@%s/%s\"\n",
+        $this->{username},
+        $this->{password},
+        $this->{host},
+        $this->{dbname};
+
+    $result .= "\n[[tileset]]\nname=\"pbfs\"\n";
+    while (my ($table, $hash) = each(%{$this->{tables}})) {
+
+        $result .= sprintf "\n[[tileset.layer]]\nname=\"%s\"\ntable_name=\"%s\"\n", $hash->{final_name}, $table;
+
+        $result .= sprintf "query_limit=10000\nmake_valid=true\ngeometry_field=\"%s\"\ngeometry_type=\"%s\"\nsrid=%s\n", 
+            $hash->{geometry}->{name},
+            $hash->{geometry}->{type},
+            $hash->{geometry}->{srid};
+
+        my $sql = "";
+        if (scalar(keys %{$hash->{attributes}}) != 0) {
+            $sql = sprintf "SELECT %s,%s FROM $table", 
+                join(",", keys(%{$hash->{attributes}})), 
+                $hash->{geometry}->{name};
+        } else {
+            # Cas où l'on ne veut aucun attribut sauf la géométrie
+            $sql = sprintf "SELECT %s FROM $table",
+                $hash->{geometry}->{name};
+        }
+            
+        if ($hash->{filter} ne "") {
+            $sql .= sprintf " WHERE %s", $hash->{filter};
+        }
+
+        $result .= "[[tileset.layer.query]]\nsql = \"\"\"$sql\"\"\"\n";
+    }
+
+    return $result;
+}
+
+=begin nd
+Function: computeBBox
+
+Calculate extrem limits of tables, in the source SRS.
+
+Returns a double list : (xMin,yMin,xMax,yMax).
+=cut
+sub computeBBox {
+    my $this = shift;
+
+    my ($xmin,$ymin,$xmax,$ymax) = (undef, undef, undef, undef);
+
+    while (my ($table, $hash) = each(%{$this->{tables}})) {
+        if (! defined $xmin) {
+            $xmin = $hash->{geometry}->{bbox}->[0];
+            $xmax = $hash->{geometry}->{bbox}->[2];
+            $ymin = $hash->{geometry}->{bbox}->[1];
+            $ymax = $hash->{geometry}->{bbox}->[3];
+            next;
+        }
+        $xmin = min($xmin, $hash->{geometry}->{bbox}->[0]);
+        $xmax = max($xmax, $hash->{geometry}->{bbox}->[2]);
+        $ymin = min($ymin, $hash->{geometry}->{bbox}->[1]);
+        $ymax = max($ymax, $hash->{geometry}->{bbox}->[3]);
+    }
+
+    return ($xmin,$ymin,$xmax,$ymax);
 }
 
 ####################################################################################################

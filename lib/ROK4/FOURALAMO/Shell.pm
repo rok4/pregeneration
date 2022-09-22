@@ -48,7 +48,7 @@ Using:
     (start code)
     use ROK4::FOURALAMO::Shell;
 
-    if (! ROK4::FOURALAMO::Shell::setGlobals($commonTempDir)) {
+    if (! ROK4::FOURALAMO::Shell::setGlobals($params)) {
         ERROR ("Cannot initialize Shell commands for FOURALAMO");
         return FALSE;
     }
@@ -154,7 +154,7 @@ FUNCTION
 my $MAKETILES = <<'FUNCTION';
 
 mkdir -p ${TMP_DIR}/pbfs/
-MakeTiles () {
+CallTippecanoe () {
     local sources=$1
     local top_level=$2
     local bottom_level=$3
@@ -167,9 +167,29 @@ MakeTiles () {
     rm -r ${TMP_DIR}/pbfs/*
 
     tippecanoe ${TIPPECANOE_OPTIONS} $generalization_options --base-zoom ${top_level} --full-detail 10 -Z ${top_level} -z ${bottom_level} -e ${TMP_DIR}/pbfs/  $sources
-    if [ $? != 0 ] ; then echo $0; fi
+    if [ $? != 0 ] ; then echo $0; exit 1; fi
 
     rm ${TMP_DIR}/jsons/*.json
+}
+
+if [[ -d ${COMMON_TMP_DIR}/trex/ ]]; then
+    cp -r ${COMMON_TMP_DIR}/trex/ ${TMP_DIR}/
+    sed -i "s#@BASEPATH@#${TMP_DIR}/#" ${TMP_DIR}/trex/*.toml
+fi
+
+CallTrex () {
+    local extent=$1
+    local top_level=$2
+    local bottom_level=$3
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+
+    rm -r ${TMP_DIR}/pbfs/*
+
+    t_rex generate --maxzoom ${bottom_level} --minzoom ${top_level} --config ${TMP_DIR}/trex/config_${bottom_level}_${top_level}.toml --extent $extent --tileset pbfs
+    if [ $? != 0 ] ; then echo $0; exit 1; fi
 }
 FUNCTION
 

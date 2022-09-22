@@ -68,7 +68,8 @@ Attributes:
     wms - <ROK4::PREGENERATION::SourceWMS> - WMS server.
     database - <ROK4::PREGENERATION::SourceDatabase> - PostgreSQL server.
     pyramids - <ROK4::PREGENERATION::SourcePyramid> - Pyramids source.
-    tippecanoe_options - string - options for tippecanoe calls, for vector sources
+    generator_name - string - name of tile generator, for vector sources
+    generator_options - string - options for generator calls, for vector sources
 =cut
 
 ################################################################################
@@ -136,6 +137,7 @@ sub new {
         list => undef,
         extent => undef,
         area => undef,
+
         srs => undef,
 
         images => undef,
@@ -144,7 +146,8 @@ sub new {
         database => undef,
         pyramids => undef,
 
-        tippecanoe_options => ""
+        generator_name => "",
+        generator_options => ""
     };
 
     bless($this, $class);
@@ -168,6 +171,8 @@ sub _load {
     $this->{topID} = $params->{top};
 
     $this->{type} = $params->{source}->{type};
+
+    my $bbox_data = undef;
     if ($this->{type} eq "IMAGES") {
         $this->{images} = ROK4::PREGENERATION::SourceImage->new($params->{source});
         if (! defined $this->{images}) {
@@ -190,8 +195,9 @@ sub _load {
         $this->{bbox} = \@BBOX;
         $this->{area} = "BBOX";
 
-        if (exists($params->{tippecanoe_options}) && defined $params->{tippecanoe_options}) {
-            $this->{tippecanoe_options} = $params->{tippecanoe_options};
+        $this->{generator_name} = "TIPPECANOE";
+        if (exists($params->{generator}->{options}) && defined $params->{generator}->{options}) {
+            $this->{generator_options} = $params->{generator}->{options};
         }
     }
     elsif ($this->{type} eq "WMS") {
@@ -223,22 +229,43 @@ sub _load {
             return FALSE;
         }
         $this->{srs} = $params->{source}->{srs};
+
+        my @data_bbox = $this->{database}->computeBBox();
+        INFO(join(",",@data_bbox));
             
         if (exists $params->{source}->{area}->{bbox}) {
             $this->{bbox} = $params->{source}->{area}->{bbox};
             $this->{area} = "BBOX";
+
+            # On va restreindre la bbox fournie à l'étendue réelle des données en base
+            $this->{bbox}->[0] = max($data_bbox[0], $this->{bbox}->[0]); # xmin
+            $this->{bbox}->[1] = max($data_bbox[1], $this->{bbox}->[1]); # ymin
+            $this->{bbox}->[2] = min($data_bbox[2], $this->{bbox}->[2]); # xmax
+            $this->{bbox}->[3] = min($data_bbox[3], $this->{bbox}->[3]); # ymax
+
+            if ($this->{bbox}->[2] <= $this->{bbox}->[0] || $this->{bbox}->[3] <= $this->{bbox}->[1]) {
+                ERROR("Data extent in PostgreSQL and provided bbox are not intersected");
+                return FALSE;
+            }
         }
-        if (exists $params->{source}->{area}->{geometry}) {
+        elsif (exists $params->{source}->{area}->{geometry}) {
             $this->{extent} = $params->{source}->{area}->{geometry};
             $this->{area} = "EXTENT";
         }
-        if (exists $params->{source}->{area}->{list}) {
+        elsif (exists $params->{source}->{area}->{list}) {
             $this->{list} = $params->{source}->{area}->{list};
             $this->{area} = "LIST";
         }
+        else {
+            # On va faire le calcul sur l'ensemble des données en base
+            $this->{bbox} = \@data_bbox;
+            $this->{area} = "BBOX";
+        }
 
-        if (exists($params->{tippecanoe_options}) && defined $params->{tippecanoe_options}) {
-            $this->{tippecanoe_options} = $params->{tippecanoe_options};
+
+        $this->{generator_name} = $params->{generator}->{name};
+        if (exists($params->{generator}->{options}) && defined $params->{generator}->{options}) {
+            $this->{generator_options} = $params->{generator}->{options};
         }
     }
     elsif ($this->{type} eq "PYRAMIDS") {
@@ -273,6 +300,7 @@ sub _load {
         }
     }
     elsif ($this->{area} eq "BBOX") {
+        INFO("là");
         $this->{extent} = ROK4::Core::ProxyGDAL::geometryFromBbox(@{$this->{bbox}});
     }
     elsif ($this->{area} eq "EXTENT") {
@@ -356,10 +384,16 @@ sub getType {
     return $this->{type};
 }
 
-# Function: getTippecanoeOptions
-sub getTippecanoeOptions {
+# Function: getGenerator
+sub getGenerator {
     my $this = shift;
-    return $this->{tippecanoe_options};
+    return $this->{generator_name};
+}
+
+# Function: getGeneratorOptions
+sub getGeneratorOptions {
+    my $this = shift;
+    return $this->{generator_options};
 }
 
 # Function: getBottomID

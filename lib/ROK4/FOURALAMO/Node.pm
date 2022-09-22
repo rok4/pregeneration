@@ -346,15 +346,8 @@ sub makeJsons {
     my @tables = $datasource->getSource()->getSqlExports();
 
     my @tmp = $this->getBBox(TRUE);
-    if ($this->getLevel() eq "0") {
-        INFO(join(",", @tmp));
-    }
 
-    my @bbox = ROK4::Core::ProxyGDAL::convertBBox( $this->getGraph()->getCoordTransPyramidDatasource(), $this->getBBox(TRUE));
-
-    if ($this->getLevel() eq "0") {
-        INFO(Dumper(\@bbox));
-    }
+    my @bbox = ROK4::Core::ProxyGDAL::convertBBox( $this->getGraph()->getCoordTransPyramidDatasource(), @tmp);
 
     # On va agrandir la bbox de 5% pour être sur de tout avoir
     my @bbox_extended = @bbox;
@@ -364,10 +357,6 @@ sub makeJsons {
     $bbox_extended[2] += $w;
     $bbox_extended[1] -= $h;
     $bbox_extended[3] += $h;
-
-    if ($this->getLevel() eq "0") {
-        INFO(Dumper(\@bbox_extended));
-    }
 
     my $bbox_ext_string = join(" ", @bbox_extended);
     my $bbox_string = join(" ", @bbox);
@@ -412,13 +401,27 @@ sub makeTiles {
     my $this = shift;
     my $datasource = shift;
 
-    # ${TMP_DIR}/jsons/*.json
-    my $sources = '${TMP_DIR}/jsons/*.json';
-    if ($datasource->getType() eq "VECTORS") {
-        $sources = $datasource->getSource()->getPathsList();
-    }
+    if ($datasource->getGenerator() eq "TIPPECANOE") {
+        # ${TMP_DIR}/jsons/*.json
+        my $sources = '${TMP_DIR}/jsons/*.json';
+        if ($datasource->getType() eq "VECTORS") {
+            $sources = $datasource->getSource()->getPathsList();
+        }
+        $this->{script}->write(sprintf "CallTippecanoe \"$sources\" %s %s \"%s\"\n", $this->getGraph()->getTopID(), $this->getGraph()->getBottomID(), $datasource->getGeneratorOptions());
+    } elsif ($datasource->getGenerator() eq "TREX") {
+        my $limits = $datasource->getBbox();
+        my @tmp = ROK4::Core::ProxyGDAL::convertBBox($this->getGraph()->getCoordTransPyramidDatasource(), $this->getBBox(TRUE));
 
-    $this->{script}->write(sprintf "MakeTiles \"$sources\" %s %s \"%s\"\n", $this->getGraph()->getTopID(), $this->getGraph()->getBottomID(), $datasource->getTippecanoeOptions());
+        $tmp[0] = max($tmp[0], $limits->[0]); # xmin
+        $tmp[1] = max($tmp[1], $limits->[1]); # ymin
+        $tmp[2] = min($tmp[2], $limits->[2]); # xmax
+        $tmp[3] = min($tmp[3], $limits->[3]); # ymax
+        $this->{script}->write(
+            sprintf "CallTrex %s,%s,%s,%s,%s %s %s\n", 
+                @tmp, $datasource->getSource()->getSrid(),
+                $this->getGraph()->getTopID(), $this->getGraph()->getBottomID()
+        );
+    }
 
     return TRUE;
 }

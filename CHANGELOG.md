@@ -10,12 +10,7 @@ Cette release contient les outils de prégénération des pyramides de données,
 
 ### [Added]
 
-* Gestion des redirections par Curl pour les requêtes de téléversement de fichier sur un stockage objet SWIFT ou S3
-* Fourniture du filtre des données lors des demandes de statistiques sur les données en base postgresql
-
-### [Fixed]
-
-* Correction du schéma JSON de description du fichier de configuration de l'outil PYR2PYR
+* Possibilité de choisir TREX comme moteur de génération des tuiles vectorielles avec 4ALAMO
 
 <!-- 
 ### [Added]
