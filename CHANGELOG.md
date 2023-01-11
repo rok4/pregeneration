@@ -12,6 +12,7 @@ Cette release contient les outils de prégénération des pyramides de données,
 
 * Gestion des redirections par Curl pour les requêtes de téléversement de fichier sur un stockage objet SWIFT ou S3
 * Fourniture du filtre des données lors des demandes de statistiques sur les données en base postgresql
+* BE4 : génération d'une valeur de nodata par défaut si non fournie (basée sur le format de pixel en sortie)
 
 ### [Fixed]
 

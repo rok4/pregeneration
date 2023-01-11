@@ -339,7 +339,7 @@ sub load {
     my $inputPixel = undef;
     foreach my $s (@{$this{loaded}->{sources}}) {
         if (! defined $s->getPixel()) {
-            # Deux pyramides de la source n'ont déjà pas les mếme caractéristiques
+            # Deux pyramides de la source n'ont déjà pas les même caractéristiques
             INFO("All source pyramids does not own the same pixel informations, we have to provide the output pixel");
             last;
         }

@@ -548,6 +548,20 @@ sub doIt {
             }
         }
 
+        if (! exists $pyramid->{nodata}) {
+            $pyramid->{nodata} = [];
+
+            for (my $i = 0; $i < $pyramid->{pixel}->{samplesperpixel}; $i++) {
+                if ($pyramid->{pixel}->{sampleformat} eq "FLOAT32") {
+                    push(@{$pyramid->{nodata}}, -99999);
+                } elsif ($pyramid->{pixel}->{sampleformat} eq "UINT8") {
+                    push(@{$pyramid->{nodata}}, 255);
+                } else {
+                    push(@{$pyramid->{nodata}}, 0);
+                }
+            }
+        }  
+
         $this{loaded}->{output_pyramid} = ROK4::Core::PyramidRaster->new("VALUES", $pyramid );
         if (! defined $this{loaded}->{output_pyramid}) {
             ERROR("Cannot load new pyramid");

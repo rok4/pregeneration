@@ -12,7 +12,7 @@ ECHO_VERSION
 
 WriteMakefile(
     # version du package complet
-    NAME => "ROK4GENERATION",
+    NAME => "ROK4PREGENERATION",
     # install to INSTALL_BASE/bin
     EXE_FILES => [
         'bin/be4.pl',

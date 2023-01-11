@@ -177,7 +177,7 @@
             "oneOf": [{
                     "type": "object",
                     "description": "Génération d'une nouvelle pyramide",
-                    "required": ["name", "type", "tms", "storage", "nodata"],
+                    "required": ["name", "type", "tms", "storage"],
                     "properties": {
                         "type": {
                             "type": "string",
