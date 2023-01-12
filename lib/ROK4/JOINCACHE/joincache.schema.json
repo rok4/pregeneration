@@ -104,22 +104,15 @@
         "pyramid": {
             "type": "object",
             "description": "Génération d'une nouvelle pyramide comme produit de fusion",
-            "required": ["name", "nodata", "compression", "storage"],
+            "required": ["name", "nodata", "compression", "root"],
             "properties": {
                 "name": {
                     "type": "string",
                     "description": "Nom de la nouvelle pyramide fusionnée"
                 },
-                "storage": {
-                    "type": "object",
-                    "required": ["root"],
-                    "properties": {
-                        "root": {
-                            "type": "string",
-                            "description": "Racine de stockage : un dossier pour le type FILE, le nom du pool en CEPH, le nom du bucket en S3 et le nom du container en SWIFT"
-                        }
-                    }
-
+                "root": {
+                    "type": "string",
+                    "description": "Racine de stockage : un dossier pour le type FILE, le nom du pool en CEPH, le nom du bucket en S3 et le nom du container en SWIFT"
                 },
                 "pixel": {
                     "type": "object",

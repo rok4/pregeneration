@@ -282,10 +282,7 @@ Génération d'une pyramide par fusion de 2 pyramides CEPH, avec conversion des 
     ],
     "pyramid": {
         "name": "ENTIER",
-        "storage": {
-            "type": "CEPH",
-            "root": "pool"
-        },
+        "root": "pool",
         "pixel": {
             "samplesperpixel": 1,
             "sampleformat": "UINT8"

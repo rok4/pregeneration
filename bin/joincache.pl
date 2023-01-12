@@ -368,6 +368,7 @@ sub load {
     $this{params}->{pyramid}->{slab_size} = [$refPyramid->getTilesPerWidth(), $refPyramid->getTilesPerHeight()];
     $this{params}->{pyramid}->{tms} = $refPyramid->getTileMatrixSet()->getName();
     $this{params}->{pyramid}->{storage}->{type} = $refPyramid->getStorageType();
+    $this{params}->{pyramid}->{storage}->{root} = $this{params}->{pyramid}->{root};
 
     if ($this{params}->{pyramid}->{storage}->{type} eq "FILE") {
         # Dans le cas du stockage fichier, la profondeur d'arborescence est la même que pour les sources
