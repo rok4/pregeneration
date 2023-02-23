@@ -9,8 +9,8 @@ Uniformisation de la configuration de Joincache avec les autres outils
 
 ### [Changed]
 
-* Joincache
-  * Pour le stockage de la pyramide en sortie, on ne précise que la racine, le type de stockage étant forcément le même que celui des pyramides en entrée.
+* BE4
+  * Le niveau du haut peut ne pas être précisé (valeur `<AUTO>`). Il sera déterminé de la manière suivante : si c'est la source le plus haute, on utilisera le niveau du haut du TMS, sinon on utilisera le niveau juste en dessous du bas de la source juste au dessus
 
 
 <!-- 

@@ -264,6 +264,11 @@ sub _load {
         return FALSE;
     }
 
+    if ($this->{topID} eq "<AUTO>" && $this->{type} ne "WMS" && $this->{type} ne "IMAGES") {
+        ERROR("Auto detect the top level is only possible with WMS or image source");
+        return FALSE;
+    }
+
     if ($this->{area} eq "LIST") {
         # On a fourni un fichier contenant la liste des images (I et J) à générer
         my $file = $this->{list};

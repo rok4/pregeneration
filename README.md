@@ -174,7 +174,7 @@ Mise à jour par référence d'une pyramide S3 par moissonnage d'un service WMS
     },
     "datasources": [
         {
-            "top": "0",
+            "top": "<AUTO>",
             "bottom": "8",
             "source": {
                 "type": "WMS",
@@ -187,7 +187,7 @@ Mise à jour par référence d'une pyramide S3 par moissonnage d'un service WMS
             }
         },
         {
-            "top": "9",
+            "top": "<AUTO>",
             "bottom": "12",
             "source": {
                 "type": "WMS",
