@@ -50,6 +50,6 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./${{ steps.build_debian.outputs.file_name }}
-          asset_name: rok4-pregeneration-${{ github.ref_name }}-ubuntu20.04-all.deb
+          asset_name: rok4-pregeneration-${{ github.ref_name }}-ubuntu-20.04-all.deb
           asset_content_type: application/vnd.debian.binary-package
           

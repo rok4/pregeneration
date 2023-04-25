@@ -2,15 +2,15 @@
 
 ## Summary
 
-Uniformisation de la configuration de Joincache avec les autres outils
+Correction de la création d'objets symboliques sur S3.
 
 ## Changelog
 
 
-### [Changed]
+### [Fixed]
 
-* BE4
-  * Le niveau du haut peut ne pas être précisé (valeur `<AUTO>`). Il sera déterminé de la manière suivante : si c'est la source le plus haute, on utilisera le niveau du haut du TMS, sinon on utilisera le niveau juste en dessous du bas de la source juste au dessus
+* JOINCACHE
+  * L'écriture d'objets symbolique sur un stockage S3 est plus générique, il marche également pour l'implémentation minio.
 
 
 <!-- 

@@ -196,7 +196,7 @@ LinkSlab () {
         curl_options="-k"
     fi
 
-    echo -n "SYMLINK#${target}" | curl $curl_options  --fail -X PUT -T /dev/stdin \
+    curl $curl_options  --fail -X PUT -d "SYMLINK#${target}" \
      -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
      -H "Content-Type: ${contentType}" \
