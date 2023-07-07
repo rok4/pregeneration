@@ -261,7 +261,13 @@ MergeNtiff () {
     fi
     
     if [ -f ${MNT_CONF_DIR}/$config ]; then
-        mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ ${MERGENTIFF_OPTIONS}
+
+        if [ $bgI ] ; then
+            mergeNtiff -f ${MNT_CONF_DIR}/$config -g -r ${TMP_DIR}/ ${MERGENTIFF_OPTIONS}
+        else
+            mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ ${MERGENTIFF_OPTIONS}
+        fi
+        
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
         rm -f ${MNT_CONF_DIR}/$config
