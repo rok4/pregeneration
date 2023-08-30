@@ -45,7 +45,7 @@ make install
 
 Leur définition est contrôlée à l'usage.
 
-* `ROK4_TMS_DIRECTORY` pour y chercher les Tile Matrix Sets. Ces derniers peuvent être téléchargés sur [GitHub](https://github.com/rok4/tilematrixsets/releases/), installés depuis le paquet debian et seront alors dans le dossier `/etc/rok4/tilematrixsets`.
+* `ROK4_TMS_DIRECTORY` pour y chercher les Tile Matrix Sets. Ces derniers peuvent être téléchargés sur [GitHub](https://github.com/rok4/tilematrixsets/releases/), installés depuis le paquet debian et seront alors dans le dossier `/usr/share/rok4/tilematrixsets`.
 * Pour le stockage CEPH
     - `ROK4_CEPH_CONFFILE`
     - `ROK4_CEPH_USERNAME`
