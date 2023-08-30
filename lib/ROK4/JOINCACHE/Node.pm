@@ -40,7 +40,7 @@ File: Node.pm
 
 Class: ROK4::JOINCACHE::Node
 
-(see libperlauto/JOINCACHE_Node.png)
+(see libperlauto/ROK4_JOINCACHE_Node.png)
 
 Descibe a node
 

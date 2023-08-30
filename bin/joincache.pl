@@ -339,7 +339,7 @@ sub load {
     my $inputPixel = undef;
     foreach my $s (@{$this{loaded}->{sources}}) {
         if (! defined $s->getPixel()) {
-            # Deux pyramides de la source n'ont déjà pas les mếme caractéristiques
+            # Deux pyramides de la source n'ont déjà pas les même caractéristiques
             INFO("All source pyramids does not own the same pixel informations, we have to provide the output pixel");
             last;
         }
@@ -368,13 +368,11 @@ sub load {
     $this{params}->{pyramid}->{slab_size} = [$refPyramid->getTilesPerWidth(), $refPyramid->getTilesPerHeight()];
     $this{params}->{pyramid}->{tms} = $refPyramid->getTileMatrixSet()->getName();
     $this{params}->{pyramid}->{storage}->{type} = $refPyramid->getStorageType();
+    $this{params}->{pyramid}->{storage}->{root} = $this{params}->{pyramid}->{root};
 
     if ($this{params}->{pyramid}->{storage}->{type} eq "FILE") {
         # Dans le cas du stockage fichier, la profondeur d'arborescence est la même que pour les sources
         $this{params}->{pyramid}->{storage}->{depth} = $refPyramid->getDirDepth();
-    } else {
-        # Dans le cas du stockage objet, la racine de stockage est la même que pour les sources
-        $this{params}->{pyramid}->{storage}->{root} = $refPyramid->getStorageRoot();
     }
 
     $this{loaded}->{output_pyramid} = ROK4::Core::PyramidRaster->new("VALUES", $this{params}->{pyramid} );

@@ -40,7 +40,7 @@ File: SourceImage.pm
 
 Class: ROK4::PREGENERATION::SourceImage
 
-(see libperlauto/Core_SourceImage.png)
+(see libperlauto/ROK4_Core_SourceImage.png)
 
 Define a data source, with georeferenced image directory.
 

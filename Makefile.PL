@@ -12,7 +12,7 @@ ECHO_VERSION
 
 WriteMakefile(
     # version du package complet
-    NAME => "ROK4GENERATION",
+    NAME => "ROK4PREGENERATION",
     # install to INSTALL_BASE/bin
     EXE_FILES => [
         'bin/be4.pl',
@@ -24,8 +24,7 @@ WriteMakefile(
     BUILD_REQUIRES => { 
         "ExtUtils::MakeMaker" => 0
     },
-    PREREQ_FATAL => 1,
-    # ack --ignore-dir=core -h "^use [A-Z]" ./ | cut -d' ' -f2 | grep -v -E "ROK4" | sed -r "s#;##" | sort | uniq | sed -r "s/(.+)/\"\1\" => 0,/"
+    # ack -h "^use [A-Z]" ./ | cut -d' ' -f2 | grep -v -E "ROK4::(BE4|FOURALAMO|FOURHEAD|JOINCACHE|PREGENERATION|PYR2PYR)" | sed -r "s#;##" | sort | uniq | sed -r "s/(.+)/\"\1\" => 0,/"
     PREREQ_PM   => {
         "Cwd" => 0,
         "Data::Dumper" => 0,
@@ -38,6 +37,22 @@ WriteMakefile(
         "List::Util" => 0,
         "Log::Log4perl" => 0,
         "Math::BigFloat" => 0,
-        "POSIX" => 0
+        "POSIX" => 0,
+        "ROK4::Core::Array" => 0,
+        "ROK4::Core::Base36" => 0,
+        "ROK4::Core::Database" => 0,
+        "ROK4::Core::GeoImage" => 0,
+        "ROK4::Core::GeoVector" => 0,
+        "ROK4::Core::LevelRaster" => 0,
+        "ROK4::Core::Pixel" => 0,
+        "ROK4::Core::ProxyGDAL" => 0,
+        "ROK4::Core::ProxyPyramid" => 0,
+        "ROK4::Core::ProxyStorage" => 0,
+        "ROK4::Core::PyramidRaster" => 0,
+        "ROK4::Core::PyramidVector" => 0,
+        "ROK4::Core::Shell" => 0,
+        "ROK4::Core::TileMatrix" => 0,
+        "ROK4::Core::TileMatrixSet" => 0,
+        "ROK4::Core::Utils" => 0,
     }
 );

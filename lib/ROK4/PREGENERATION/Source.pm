@@ -40,7 +40,7 @@ File: DataSource.pm
 
 Class: ROK4::PREGENERATION::Source
 
-(see libperlauto/Core_DataSource.png)
+(see libperlauto/ROK4_Core_DataSource.png)
 
 Manage a data source, physical (image files) or virtual (WMS server) or both.
 
@@ -261,6 +261,11 @@ sub _load {
 
     if ($this->{bottomID} eq "<AUTO>" && $this->{type} ne "IMAGES") {
         ERROR("Auto detect the bottom level is only possible with image source");
+        return FALSE;
+    }
+
+    if ($this->{topID} eq "<AUTO>" && $this->{type} ne "WMS" && $this->{type} ne "IMAGES") {
+        ERROR("Auto detect the top level is only possible with WMS or image source");
         return FALSE;
     }
 

@@ -280,7 +280,7 @@
                         },
                         "root": {
                             "type": "string",
-                            "description": "Dossier dans lequel écrire la donnée de la nouvelle pyramide, dans le cas de la mise à jour d'une pyramide FICHIER"
+                            "description": "Dossier ou contenant objet dans lequel écrire la donnée de la nouvelle pyramide"
                         }
                     }
                 },

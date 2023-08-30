@@ -40,7 +40,7 @@ File: Shell.pm
 
 Class: ROK4::FOURHEAD::Shell
 
-(see libperlauto/FOURHEAD_Shell.png)
+(see libperlauto/ROK4_FOURHEAD_Shell.png)
 
 Provides functions to generate slab for 4head tool.
 

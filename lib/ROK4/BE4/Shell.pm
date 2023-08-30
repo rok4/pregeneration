@@ -40,13 +40,13 @@ File: Shell.pm
 
 Class: ROK4::BE4::Shell
 
-(see libperlauto/BE4_Shell.png)
+(see libperlauto/ROK4_BE4_Shell.png)
 
 Configure and assemble commands used to generate raster pyramid's slabs.
 
 All schemes in this page respect this legend :
 
-(see ROK4GENERATION/tools/formats.png)
+(see formats.png)
 
 Using:
     (start code)
@@ -111,8 +111,8 @@ sub setGlobals {
     }
 
     $ISUPDATE = FALSE;
-    if ($params->{pyramid}->{type} ne "GENERATION") {
-        $ISUPDATE = FALSE;
+    if ($params->{type} ne "GENERATION") {
+        $ISUPDATE = TRUE;
     }
 
     $PARALLELIZATIONLEVEL = $params->{parallelization};
@@ -261,7 +261,13 @@ MergeNtiff () {
     fi
     
     if [ -f ${MNT_CONF_DIR}/$config ]; then
-        mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ ${MERGENTIFF_OPTIONS}
+
+        if [ $bgI ] ; then
+            mergeNtiff -f ${MNT_CONF_DIR}/$config -g -r ${TMP_DIR}/ ${MERGENTIFF_OPTIONS}
+        else
+            mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ ${MERGENTIFF_OPTIONS}
+        fi
+        
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
         rm -f ${MNT_CONF_DIR}/$config
@@ -309,7 +315,7 @@ PushSlab () {
         if [ -r ${TMP_DIR}/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
         if [ ! -d $dir ] ; then mkdir -p $dir ; fi
             
-        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} ${PYR_DIR}/$imgName
+        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} file://${PYR_DIR}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         echo "0/$imgName" >> ${TMP_LIST_FILE}
@@ -330,7 +336,7 @@ PushSlab () {
                 if [ -r ${TMP_DIR}/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
                 if [ ! -d $dir ] ; then mkdir -p $dir ; fi
                     
-                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} ${PYR_DIR}/$mskName
+                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} file://${PYR_DIR}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
@@ -354,7 +360,7 @@ PullSlab () {
     local input=$1
     local output=$2
 
-    cache2work -c zip ${PYR_DIR}/$input ${TMP_DIR}/$output
+    cache2work -c zip file://${PYR_DIR}/$input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION
@@ -382,7 +388,7 @@ PushSlab () {
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
              
-        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -bucket ${PYR_BUCKET} ${PYR_PREFIX}/$imgName
+        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} s3://${PYR_BUCKET}/${PYR_PREFIX}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         echo "0/$imgName" >> ${TMP_LIST_FILE}
@@ -398,7 +404,7 @@ PushSlab () {
             
             if [ $mskName ] ; then
                     
-                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -bucket ${PYR_BUCKET} ${PYR_PREFIX}/$mskName
+                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} s3://${PYR_BUCKET}/${PYR_PREFIX}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
@@ -420,7 +426,7 @@ PullSlab () {
     local input=$1
     local output=$2
 
-    cache2work -c zip -bucket ${PYR_BUCKET} ${PYR_PREFIX}/$input ${TMP_DIR}/$output
+    cache2work -c zip s3://${PYR_BUCKET}/${PYR_PREFIX}/$input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION
@@ -447,7 +453,7 @@ PushSlab () {
     fi
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
-        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} ${PYR_PREFIX}/$imgName
+        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} swift://${PYR_CONTAINER}/${PYR_PREFIX}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         echo "0/$imgName" >> ${TMP_LIST_FILE}
@@ -463,7 +469,7 @@ PushSlab () {
             
             if [ $mskName ] ; then
                     
-                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -container ${PYR_CONTAINER} ${PYR_PREFIX}/$mskName
+                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} swift://${PYR_CONTAINER}/${PYR_PREFIX}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
@@ -485,7 +491,7 @@ PullSlab () {
     local input=$1
     local output=$2
 
-    cache2work -c zip -container ${PYR_CONTAINER} ${PYR_PREFIX}/$input ${TMP_DIR}/$output
+    cache2work -c zip swift://${PYR_CONTAINER}/${PYR_PREFIX}/$input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION
@@ -514,7 +520,7 @@ PushSlab () {
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
              
-        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -pool ${PYR_POOL} ${PYR_PREFIX}/$imgName
+        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} ceph://${PYR_POOL}/${PYR_PREFIX}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         echo "0/$imgName" >> ${TMP_LIST_FILE}
@@ -530,7 +536,7 @@ PushSlab () {
             
             if [ $mskName ] ; then
                     
-                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -pool ${PYR_POOL} ${PYR_PREFIX}/$mskName
+                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} ceph://${PYR_POOL}/${PYR_PREFIX}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
@@ -554,7 +560,7 @@ PullSlab () {
     local input=$1
     local output=$2
 
-    cache2work -c zip -pool ${PYR_POOL} ${PYR_PREFIX}/$input ${TMP_DIR}/$output
+    cache2work -c zip ceph://${PYR_POOL}/${PYR_PREFIX}/$input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION

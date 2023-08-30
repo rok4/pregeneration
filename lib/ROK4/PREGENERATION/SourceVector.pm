@@ -40,7 +40,7 @@ File: SourceVector.pm
 
 Class: ROK4::PREGENERATION::SourceVector
 
-(see libperlauto/Core_SourceVector.png)
+(see libperlauto/ROK4_Core_SourceVector.png)
 
 Define a data source, with georeferenced image directory.
 

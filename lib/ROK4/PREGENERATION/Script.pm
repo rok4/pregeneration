@@ -40,7 +40,7 @@ File: Script.pm
 
 Class: ROK4::PREGENERATION::Script
 
-(see libperlauto/Core_Script.png)
+(see libperlauto/ROK4_Core_Script.png)
 
 Describe a script and allowed to write in.
 

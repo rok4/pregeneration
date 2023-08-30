@@ -548,6 +548,20 @@ sub doIt {
             }
         }
 
+        if (! exists $pyramid->{nodata}) {
+            $pyramid->{nodata} = [];
+
+            for (my $i = 0; $i < $pyramid->{pixel}->{samplesperpixel}; $i++) {
+                if ($pyramid->{pixel}->{sampleformat} eq "FLOAT32") {
+                    push(@{$pyramid->{nodata}}, -99999);
+                } elsif ($pyramid->{pixel}->{sampleformat} eq "UINT8") {
+                    push(@{$pyramid->{nodata}}, 255);
+                } else {
+                    push(@{$pyramid->{nodata}}, 0);
+                }
+            }
+        }  
+
         $this{loaded}->{output_pyramid} = ROK4::Core::PyramidRaster->new("VALUES", $pyramid );
         if (! defined $this{loaded}->{output_pyramid}) {
             ERROR("Cannot load new pyramid");
@@ -569,19 +583,10 @@ sub doIt {
 
     ALWAYS(">>> Update sources' levels ...");
 
-    my %orders;
     my $tms = $this{loaded}->{output_pyramid}->getTileMatrixSet();
-    my $globalTopOrder = undef;
-    my $globalBottomOrder = undef;
-    foreach my $s (@{$this{loaded}->{sources}}) {
-        my $topID = $s->getTopID();
-        my $topOrder = $tms->getOrderfromID($topID);
-        if (! defined $topOrder) {
-            ERROR(sprintf "The top level $topID in a source does not exist in the TMS");
-            return FALSE;
-        }
-        $s->setTopOrder($topOrder);
 
+    # On détermine les niveaux du bas <AUTO>
+    foreach my $s (@{$this{loaded}->{sources}}) {
         my $bottomID = $s->getBottomID();
         if ($bottomID eq "<AUTO>") {
             $bottomID = $tms->getBestLevelID($s->getSource()->getBestResImage());
@@ -589,14 +594,54 @@ sub doIt {
                 ERROR(sprintf "Cannot auto detect the bottom level from image source best resolution");
                 return FALSE;
             }
+            DEBUG("Bottom level auto detection from source images resolution : $bottomID");
             $s->setBottomID($bottomID);
         }
         my $bottomOrder = $tms->getOrderfromID($bottomID);
-        if (! defined $topOrder) {
+        if (! defined $bottomOrder) {
             ERROR(sprintf "The bottom level $bottomID in a source does not exist in the TMS");
             return FALSE;
         }
         $s->setBottomOrder($bottomOrder);
+    }
+
+    # On met les sources dans l'ordre, du bas vers le haut
+    my @orderedSources = sort {$a->getBottomOrder() <=> $b->getBottomOrder()} (@{$this{loaded}->{sources}});
+
+
+    my %orders;
+    my $globalTopOrder = undef;
+    my $globalBottomOrder = undef;
+
+    for (my $i = 0; $i < scalar(@orderedSources); $i++) {
+        my $s = $orderedSources[$i];
+
+        my $bottomID = $s->getBottomID();
+        my $bottomOrder = $s->getBottomOrder();
+
+        my $topID = $s->getTopID();
+        if ($topID eq "<AUTO>") {
+            if ($i == scalar(@orderedSources) - 1) {
+                # On est sur la source utilisée tout en haut, on utilise donc le niveau du haut du TMS
+                $topID = $tms->getTopLevel();
+            } else {
+                # On prend comme niveau du haut le niveau juste en dessous du niveau du bas de la source suivante
+                $topID = $tms->getBelowLevelID($orderedSources[$i+1]->getBottomID());
+            }
+            if (! defined $topID) {
+                ERROR(sprintf "Cannot auto detect the top level from image or WMS sources");
+                return FALSE;
+            }
+            DEBUG("Top level auto detection for the source with bottom level $bottomID : $topID");
+            $s->setTopID($topID);
+        }
+
+        my $topOrder = $tms->getOrderfromID($topID);
+        if (! defined $topOrder) {
+            ERROR(sprintf "The top level $topID in a source does not exist in the TMS");
+            return FALSE;
+        }
+        $s->setTopOrder($topOrder);
 
         if ($bottomOrder > $topOrder) {
             ERROR("The bottom level is above the top level for a source ($bottomID > $topID)");

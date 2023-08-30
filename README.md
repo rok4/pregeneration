@@ -10,85 +10,42 @@ Il est possible que les scripts BASH sachent faire de la reprise sur erreur. Dan
 
 De même, un fichier .prog à côté du script peut être mis à jour avec le pourcentage de progression (calculé à partir des lignes du script).
 
-- [Récupération du projet](#récupération-du-projet)
-- [Dépendances à la compilation](#dépendances-à-la-compilation)
-- [Installation](#installation)
-- [Dépendances à l'exécution](#dépendances-à-lexécution)
-- [Variables d'environnement utilisées dans les librairies ROK4::Core](#variables-denvironnement-utilisées-dans-les-librairies-rok4core)
-- [Présentation des outils](#présentation-des-outils)
-  - [BE4](#be4)
-    - [Usage](#usage)
-    - [Détails](#détails)
-    - [Exemples de configuration](#exemples-de-configuration)
-  - [JOINCACHE](#joincache)
-    - [Usage](#usage-1)
-    - [Détails](#détails-1)
-    - [Exemples de configuration](#exemples-de-configuration-1)
-  - [4ALAMO](#4alamo)
-    - [Usage](#usage-2)
-    - [Détails](#détails-2)
-    - [Exemples de configuration](#exemples-de-configuration-2)
-  - [4HEAD](#4head)
-  - [PYR2PYR](#pyr2pyr)
-    - [Usage](#usage-3)
-    - [Détails](#détails-3)
-    - [Exemples de configuration](#exemples-de-configuration-3)
+## Installation depuis le paquet debian
 
-## Récupération du projet
+Télécharger les paquets sur GitHub : 
 
-`git clone --recursive https://github.com/rok4/pregeneration`
+* [Les librairies Core](https://github.com/rok4/core-perl/releases/)
+* [Les outils](https://github.com/rok4/pregeneration/releases/)
 
-## Dépendances à la compilation
+```
+apt install ./librok4-core-perl-<version>-linux-all.deb
+apt install ./rok4-pregeneration-<version>-linux-all.deb
+```
 
-* Submodule GIT
-    * `https://github.com/rok4/core-perl`
-* Paquets debian
-    * perl-base
-    * libgdal-perl
-    * libpq-dev
-    * gdal-bin
-    * libfile-find-rule-perl
-    * libfile-copy-link-perl
-    * libconfig-ini-perl
-    * libdbi-perl
-    * libdbd-pg-perl
-    * libdevel-size-perl
-    * libdigest-sha-perl
-    * libfile-map-perl
-    * libfindbin-libs-perl
-    * libhttp-message-perl
-    * liblwp-protocol-https-perl
-    * libmath-bigint-perl
-    * libterm-progressbar-perl
-    * liblog-log4perl-perl
-    * libjson-parse-perl
-    * libjson-perl
-    * libjson-validator-perl
-    * libtest-simple-perl
-    * libxml-libxml-perl
-    * libamazon-s3-perl
+## Installation depuis les sources
 
-## Installation
+Dépendances (paquets debian) :
 
-```shell
-perl Makefile.PL INSTALL_BASE=/usr/local VERSION=0.0.1
+* perl-base
+* [librok4-core-perl](https://github.com/rok4/core-perl/releases/)
+* libfindbin-libs-perl
+* libmath-bigint-perl
+* liblog-log4perl-perl
+* libjson-parse-perl
+* libjson-perl
+
+```
+perl Makefile.PL INSTALL_BASE=/usr VERSION=0.0.1 PREREQ_FATAL=1
 make
 make injectversion
 make install
 ```
 
-## Dépendances à l'exécution
-
-* Dépôt GIT
-    * `https://github.com/rok4/tilematrixsets`
-    * `https://github.com/rok4/styles`
-
-
 ## Variables d'environnement utilisées dans les librairies ROK4::Core
 
 Leur définition est contrôlée à l'usage.
 
-* `ROK4_TMS_DIRECTORY` pour y chercher les Tile Matrix Sets
+* `ROK4_TMS_DIRECTORY` pour y chercher les Tile Matrix Sets. Ces derniers peuvent être téléchargés sur [GitHub](https://github.com/rok4/tilematrixsets/releases/), installés depuis le paquet debian et seront alors dans le dossier `/usr/share/rok4/tilematrixsets`.
 * Pour le stockage CEPH
     - `ROK4_CEPH_CONFFILE`
     - `ROK4_CEPH_USERNAME`
@@ -160,7 +117,7 @@ _Étape 2 (NNGraph)_
 
 #### Exemples de configuration
 
-Génération d'une nouvelle pyramide depuis des images géoréférencées type MNT, avec application d'un style de pente
+Génération d'une nouvelle pyramide depuis des images géoréférencées type MNT, avec application d'un style de pente. Les styles peuvent être téléchargés sur [GitHub](https://github.com/rok4/styles/releases/), installés depuis le paquet debian et seront alors dans le dossier `/etc/rok4/styles`.
 
 ```json
 {
@@ -201,7 +158,7 @@ Génération d'une nouvelle pyramide depuis des images géoréférencées type M
             "shared_tmp": "/share"
         },
         "parallelization": 1,
-        "style": "/styles/montagne.json",
+        "style": "/etc/rok4/styles/montagne.json",
         "nodata": [-99999]
     }
 }
@@ -217,7 +174,7 @@ Mise à jour par référence d'une pyramide S3 par moissonnage d'un service WMS
     },
     "datasources": [
         {
-            "top": "0",
+            "top": "<AUTO>",
             "bottom": "8",
             "source": {
                 "type": "WMS",
@@ -230,7 +187,7 @@ Mise à jour par référence d'une pyramide S3 par moissonnage d'un service WMS
             }
         },
         {
-            "top": "9",
+            "top": "<AUTO>",
             "bottom": "12",
             "source": {
                 "type": "WMS",
@@ -325,10 +282,7 @@ Génération d'une pyramide par fusion de 2 pyramides CEPH, avec conversion des 
     ],
     "pyramid": {
         "name": "ENTIER",
-        "storage": {
-            "type": "CEPH",
-            "root": "pool"
-        },
+        "root": "pool",
         "pixel": {
             "samplesperpixel": 1,
             "sampleformat": "UINT8"
@@ -351,7 +305,7 @@ Génération d'une pyramide par fusion de 2 pyramides CEPH, avec conversion des 
 
 ### 4ALAMO
 
-L'outil 4ALAMO génèrent une pyramide vecteur à partir d'une base de données PostgreSQL. Ils permettent de mettre à jour une pyramide vecteur existante.
+L'outil 4ALAMO génèrent une pyramide vecteur à partir d'une base de données PostgreSQL ou de fichiers vecteurs. Ils permettent de mettre à jour une pyramide vecteur existante.
 
 Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
@@ -378,10 +332,10 @@ Outils externes utilisés :
 #### Détails
 
 _Étape 1_
-![4ALAMO étape 1](./docs/images/ROK4GENERATION/4alamo_part1.png)
+![4ALAMO étape 1](./docs/images/4alamo_part1.png)
 
 _Étape 2_
-![4ALAMO étape 2](./docs/images/ROK4GENERATION/4alamo_part2.png)
+![4ALAMO étape 2](./docs/images/4alamo_part2.png)
 
 #### Exemples de configuration
 
