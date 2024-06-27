@@ -375,7 +375,7 @@ sub makeJsons {
     for (my $i = 0; $i < scalar @tables; $i += 2) {
         my $sql = $tables[$i];
         my $dstTableName = $tables[$i+1];
-        $this->{script}->write(sprintf "MakeJson \"$srcSrs\" \"$bbox_string\" \"$bbox_ext_string\" \"$dburl\" \"$sql\" $dstTableName\n");
+        $this->{script}->write(sprintf "MakeJson \"$srcSrs\" \"$bbox_string\" \"$bbox_ext_string\" \"$dburl\" '$sql' $dstTableName\n");
     }
 
     return TRUE;

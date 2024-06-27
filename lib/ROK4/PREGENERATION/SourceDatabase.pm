@@ -432,8 +432,8 @@ sub getSqlExports {
 
         my $sql = "";
         if (scalar(keys %{$hash->{attributes}}) != 0) {
-            $sql = sprintf "SELECT %s,%s FROM $table", 
-                join(",", keys(%{$hash->{attributes}})), 
+            $sql = sprintf "SELECT \"%s\",\"%s\" FROM $table", 
+                join("\",\"", keys(%{$hash->{attributes}})), 
                 $hash->{geometry}->{name};
         } else {
             # Cas où l'on ne veut aucun attribut sauf la géométrie
