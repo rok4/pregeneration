@@ -1,6 +1,10 @@
-# Outils de pré-génération ROK4
+## 4.2.3
 
-## Changelog
+### [Fixed]
+
+* `4ALAMO` : pour permettre la génération de pyramide vecteur avec des données dont des attributs sont du vocabulaire SQL, on doit quoter correctement leurs noms.
+
+## 4.2.2
 
 ### [Fixed]
 
