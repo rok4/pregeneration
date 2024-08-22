@@ -359,7 +359,7 @@ sub load {
 
     if (defined $inputPixel) {
         if (! exists $this{params}->{pyramid}->{pixel}->{sampleformat}) {
-            $this{params}->{pyramid}->{pixel}->{sampleformat} = $inputPixel->getSampleFormatCode();
+            $this{params}->{pyramid}->{pixel}->{sampleformat} = uc($inputPixel->getSampleFormat());
         }
         if (! exists $this{params}->{pyramid}->{pixel}->{samplesperpixel}) {
             $this{params}->{pyramid}->{pixel}->{samplesperpixel} = $inputPixel->getSamplesPerPixel();

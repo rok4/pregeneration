@@ -651,11 +651,10 @@ sub getScriptInitialization {
 
     $string .= sprintf "WORK2CACHE_MASK_OPTIONS=\"-c zip -t %s %s\"\n", $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight();
 
-    $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s -s %s -b %s -a %s\"\n",
+    $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s -s %s -a %s\"\n",
         $pyramid->getCompression(),
         $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight(),
         $pyramid->getPixel()->getSamplesPerPixel(),
-        $pyramid->getPixel()->getBitsPerSample(),
         $pyramid->getPixel()->getSampleFormat();
 
     if ($pyramid->getStorageType() eq "FILE") {
