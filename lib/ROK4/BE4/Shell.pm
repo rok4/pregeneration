@@ -1046,10 +1046,9 @@ sub getScriptInitialization {
         $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -p $style -n %s\"\n", $pyramid->getInterpolation(), join(",", @{$input_nodata});
 
     } else {
-        $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -b %s -a %s -n %s\"\n",
+        $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -a %s -n %s\"\n",
             $pyramid->getInterpolation(),
             $pyramid->getPixel()->getSamplesPerPixel(),
-            $pyramid->getPixel()->getBitsPerSample(),
             $pyramid->getPixel()->getSampleFormat(),
             $pyramid->getNodata();
     }
@@ -1060,19 +1059,17 @@ sub getScriptInitialization {
 
     $string .= sprintf "WORK2CACHE_MASK_OPTIONS=\"-c zip -t %s %s\"\n", $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight();
 
-    $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s -s %s -b %s -a %s\"\n",
+    $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s -s %s -a %s\"\n",
         $pyramid->getCompression(),
         $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight(),
         $pyramid->getPixel()->getSamplesPerPixel(),
-        $pyramid->getPixel()->getBitsPerSample(),
         $pyramid->getPixel()->getSampleFormat();
 
     if ($pyramid->getTileMatrixSet()->isQTree()) {
-        $string .= sprintf "MERGE4TIFF_OPTIONS=\"-c zip -g %s -n %s -s %s -b %s -a %s\"\n",
+        $string .= sprintf "MERGE4TIFF_OPTIONS=\"-c zip -g %s -n %s -s %s -a %s\"\n",
             $pyramid->getGamma(),
             $pyramid->getNodata(),
             $pyramid->getPixel()->getSamplesPerPixel(),
-            $pyramid->getPixel()->getBitsPerSample(),
             $pyramid->getPixel()->getSampleFormat();
     } else {
         $string .= sprintf "DECIMATENTIFF_OPTIONS=\"-c zip -n %s\"\n", $pyramid->getNodata();
