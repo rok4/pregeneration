@@ -196,8 +196,7 @@ sub _load {
 
         $scriptInit = ROK4::BE4::Shell::getScriptInitialization(
             $this->{pyramid},
-            $params->{style},
-            $params->{nodata}
+            $params->{style}
         );
     } else {
         if (! ROK4::FOURALAMO::Shell::setGlobals($params)) {
