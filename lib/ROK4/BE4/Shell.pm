@@ -417,6 +417,8 @@ PushSlab () {
             fi
         fi
     fi
+
+    print_prog
 }
 
 PullSlab () {
@@ -482,6 +484,8 @@ PushSlab () {
             fi
         fi
     fi
+
+    print_prog
 }
 
 PullSlab () {
@@ -1028,7 +1032,6 @@ Function: getScriptInitialization
 Parameters (list):
     pyramid - <ROK4::Core::PyramidVector> - Pyramid to generate
     style - string - Chemin du fichier de style à appliquer
-    input_nodata - string - Valeur de nodata dans les données en entrée dans le cas d'un style
 
 Returns:
     Global variables and functions to print into script
@@ -1036,14 +1039,13 @@ Returns:
 sub getScriptInitialization {
     my $pyramid = shift;
     my $style = shift;
-    my $input_nodata = shift;
 
     # Variables
 
     my $string = $WORKANDPROG;
 
-    if (defined $style && defined $input_nodata) {
-        $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -p $style -n %s\"\n", $pyramid->getInterpolation(), join(",", @{$input_nodata});
+    if (defined $style) {
+        $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -p $style\"\n", $pyramid->getInterpolation();
 
     } else {
         $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -a %s -n %s\"\n",

@@ -158,8 +158,7 @@ Génération d'une nouvelle pyramide depuis des images géoréférencées type M
             "shared_tmp": "/share"
         },
         "parallelization": 1,
-        "style": "/etc/rok4/styles/montagne.json",
-        "nodata": [-99999]
+        "style": "/etc/rok4/styles/montagne.json"
     }
 }
 ```
