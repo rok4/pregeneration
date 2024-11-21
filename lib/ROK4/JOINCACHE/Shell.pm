@@ -196,7 +196,7 @@ LinkSlab () {
         curl_options="-k"
     fi
 
-    curl $curl_options  --fail -X PUT -d "SYMLINK#${target}" \
+    curl $curl_options -s --fail -X PUT -d "SYMLINK#${target}" \
      -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
      -H "Content-Type: ${contentType}" \
@@ -271,7 +271,7 @@ LinkSlab () {
 
     resource="/${PYR_CONTAINER}/${PYR_PREFIX}/${slabName}"
 
-    echo -n "SYMLINK#${target}" | curl --fail $curl_options -X PUT -T /dev/stdin -H "${SWIFT_TOKEN}" "${ROK4_SWIFT_PUBLICURL}${resource}"
+    echo -n "SYMLINK#${target}" | curl -s --fail $curl_options -X PUT -T /dev/stdin -H "${SWIFT_TOKEN}" "${ROK4_SWIFT_PUBLICURL}${resource}"
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
