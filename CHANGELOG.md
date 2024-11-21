@@ -1,3 +1,9 @@
+## 4.2.4
+
+### [Changed]
+
+* `JOINCACHE` : Passage en silencieux des curl pour créer des objets symboliques.
+
 ## 4.2.3
 
 ### [Fixed]
