@@ -66,6 +66,7 @@ Leur définition est contrôlée à l'usage.
         - `ROK4_KEYSTONE_PROJECTID`
 * Pour configurer l'agent de requête (intéraction SWIFT et S3)
     - `ROK4_SSL_NO_VERIFY`
+    - `ROK4_CURL_SILENT_MODE`
     - `HTTP_PROXY`
     - `HTTPS_PROXY`
     - `NO_PROXY`
