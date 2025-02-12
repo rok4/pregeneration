@@ -167,7 +167,7 @@ MakeTiles () {
     rm -r ${TMP_DIR}/pbfs/*
 
     tippecanoe ${TIPPECANOE_OPTIONS} $generalization_options --base-zoom ${top_level} --full-detail 10 -Z ${top_level} -z ${bottom_level} -e ${TMP_DIR}/pbfs/  $sources
-    if [ $? != 0 ] ; then echo $0; fi
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     rm ${TMP_DIR}/jsons/*.json
 }

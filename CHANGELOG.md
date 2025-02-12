@@ -1,3 +1,10 @@
+## 4.2.5
+
+### [Fixed]
+
+* `4ALAMO` : 
+  * Correction de la sortie en erreur lors de l'appel à tippecanoe
+
 ## 4.2.4
 
 ### [Changed]
