@@ -196,6 +196,10 @@ LinkSlab () {
         curl_options="-k"
     fi
 
+    if [[ ! -z $ROK4_CURL_SILENT_MODE ]]; then
+        curl_options="$curl_options -s"
+    fi
+
     curl $curl_options -s --fail -X PUT -d "SYMLINK#${target}" \
      -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
@@ -267,6 +271,10 @@ LinkSlab () {
     curl_options=""
     if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
         curl_options="-k"
+    fi
+
+    if [[ ! -z $ROK4_CURL_SILENT_MODE ]]; then
+        curl_options="$curl_options -s"
     fi
 
     resource="/${PYR_CONTAINER}/${PYR_PREFIX}/${slabName}"
