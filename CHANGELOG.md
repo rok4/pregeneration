@@ -3,7 +3,7 @@
 ### [Changed]
 
 * `JOINCACHE` : 
-  * L'écriture d'objet symbolique en S3 se fait avec un retry (5 fois, 2 secondes entre chaque tentative)
+  * L'écriture d'objet symbolique en S3 se fait avec un retry (ROK4_OBJECT_WRITE_ATTEMPTS (0) fois, ROK4_OBJECT_ATTEMPTS_WAIT (2) secondes entre chaque tentative)
 
 ## 4.2.5
 
