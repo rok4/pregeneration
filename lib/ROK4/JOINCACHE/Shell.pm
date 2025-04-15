@@ -176,6 +176,10 @@ OverlayNtiff () {
 ONTFUNCTION
 
 my $S3_STORAGE_FUNCTIONS = <<'STORAGEFUNCTIONS';
+
+ATTEMPTS_WAIT="${ROK4_OBJECT_ATTEMPTS_WAIT:-2}"
+WRITE_ATTEMPTS="${ROK4_OBJECT_WRITE_ATTEMPTS:-0}"
+
 LinkSlab () {
     local target=$1
     local slabName=$2
@@ -196,7 +200,7 @@ LinkSlab () {
         curl_options="-k"
     fi
 
-    curl $curl_options --retry-delay 2 --retry 5 -s --fail -X PUT -d "SYMLINK#${target}" \
+    curl $curl_options --retry-delay $ATTEMPTS_WAIT --retry $WRITE_ATTEMPTS -s --fail -X PUT -d "SYMLINK#${target}" \
      -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
      -H "Content-Type: ${contentType}" \
