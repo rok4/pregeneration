@@ -1,3 +1,10 @@
+## 4.2.6
+
+### [Changed]
+
+* `JOINCACHE` : 
+  * L'écriture d'objet symbolique en S3 se fait avec un retry (5 fois, 2 secondes entre chaque tentative)
+
 ## 4.2.5
 
 ### [Fixed]
