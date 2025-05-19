@@ -560,6 +560,10 @@ sub doIt {
                     push(@{$pyramid->{nodata}}, 0);
                 }
             }
+        }
+
+        if (exists $this{params}->{process}->{style}) {
+            $pyramid->{style} = $this{params}->{process}->{style};
         }  
 
         $this{loaded}->{output_pyramid} = ROK4::Core::PyramidRaster->new("VALUES", $pyramid );
