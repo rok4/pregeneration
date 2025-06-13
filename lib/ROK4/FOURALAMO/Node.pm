@@ -346,15 +346,8 @@ sub makeJsons {
     my @tables = $datasource->getSource()->getSqlExports();
 
     my @tmp = $this->getBBox(TRUE);
-    if ($this->getLevel() eq "0") {
-        INFO(join(",", @tmp));
-    }
 
     my @bbox = ROK4::Core::ProxyGDAL::convertBBox( $this->getGraph()->getCoordTransPyramidDatasource(), $this->getBBox(TRUE));
-
-    if ($this->getLevel() eq "0") {
-        INFO(Dumper(\@bbox));
-    }
 
     # On va agrandir la bbox de 5% pour être sur de tout avoir
     my @bbox_extended = @bbox;
@@ -364,10 +357,6 @@ sub makeJsons {
     $bbox_extended[2] += $w;
     $bbox_extended[1] -= $h;
     $bbox_extended[3] += $h;
-
-    if ($this->getLevel() eq "0") {
-        INFO(Dumper(\@bbox_extended));
-    }
 
     my $bbox_ext_string = join(" ", @bbox_extended);
     my $bbox_string = join(" ", @bbox);

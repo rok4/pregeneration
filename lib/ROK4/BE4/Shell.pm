@@ -417,6 +417,8 @@ PushSlab () {
             fi
         fi
     fi
+
+    print_prog
 }
 
 PullSlab () {
@@ -482,6 +484,8 @@ PushSlab () {
             fi
         fi
     fi
+
+    print_prog
 }
 
 PullSlab () {
@@ -1028,7 +1032,6 @@ Function: getScriptInitialization
 Parameters (list):
     pyramid - <ROK4::Core::PyramidVector> - Pyramid to generate
     style - string - Chemin du fichier de style à appliquer
-    input_nodata - string - Valeur de nodata dans les données en entrée dans le cas d'un style
 
 Returns:
     Global variables and functions to print into script
@@ -1036,22 +1039,31 @@ Returns:
 sub getScriptInitialization {
     my $pyramid = shift;
     my $style = shift;
-    my $input_nodata = shift;
 
     # Variables
 
     my $string = $WORKANDPROG;
 
-    if (defined $style && defined $input_nodata) {
-        $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -p $style -n %s\"\n", $pyramid->getInterpolation(), join(",", @{$input_nodata});
+    if (defined $style) {
+        $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -p $style\"\n", $pyramid->getInterpolation();
 
+        # On ne met pas les informations sur les canaux car le style va les modifier
+        $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s\"\n",
+            $pyramid->getCompression(),
+            $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight();
     } else {
-        $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -b %s -a %s -n %s\"\n",
+        $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -a %s -n %s\"\n",
             $pyramid->getInterpolation(),
             $pyramid->getPixel()->getSamplesPerPixel(),
-            $pyramid->getPixel()->getBitsPerSample(),
             $pyramid->getPixel()->getSampleFormat(),
             $pyramid->getNodata();
+        
+        # On met les informations sur les canaux pour activer une éventuelle conversion
+        $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s -s %s -a %s\"\n",
+            $pyramid->getCompression(),
+            $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight(),
+            $pyramid->getPixel()->getSamplesPerPixel(),
+            $pyramid->getPixel()->getSampleFormat();
     }
     $string .= "MNT_CONF_DIR=$MNTCONFDIR\n";
 
@@ -1060,20 +1072,19 @@ sub getScriptInitialization {
 
     $string .= sprintf "WORK2CACHE_MASK_OPTIONS=\"-c zip -t %s %s\"\n", $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight();
 
-    $string .= sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-c %s -t %s %s -s %s -b %s -a %s\"\n",
-        $pyramid->getCompression(),
-        $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight(),
-        $pyramid->getPixel()->getSamplesPerPixel(),
-        $pyramid->getPixel()->getBitsPerSample(),
-        $pyramid->getPixel()->getSampleFormat();
 
     if ($pyramid->getTileMatrixSet()->isQTree()) {
-        $string .= sprintf "MERGE4TIFF_OPTIONS=\"-c zip -g %s -n %s -s %s -b %s -a %s\"\n",
-            $pyramid->getGamma(),
-            $pyramid->getNodata(),
-            $pyramid->getPixel()->getSamplesPerPixel(),
-            $pyramid->getPixel()->getBitsPerSample(),
-            $pyramid->getPixel()->getSampleFormat();
+        if (defined $style) {
+            $string .= sprintf "MERGE4TIFF_OPTIONS=\"-c zip -g %s -n %s\"\n",
+                $pyramid->getGamma(),
+                $pyramid->getNodata();
+        } else {
+            $string .= sprintf "MERGE4TIFF_OPTIONS=\"-c zip -g %s -n %s -s %s -a %s\"\n",
+                $pyramid->getGamma(),
+                $pyramid->getNodata(),
+                $pyramid->getPixel()->getSamplesPerPixel(),
+                $pyramid->getPixel()->getSampleFormat();
+        }
     } else {
         $string .= sprintf "DECIMATENTIFF_OPTIONS=\"-c zip -n %s\"\n", $pyramid->getNodata();
         $string .= "DNT_CONF_DIR=$DNTCONFDIR\n";
