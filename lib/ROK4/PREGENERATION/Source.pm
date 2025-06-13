@@ -296,6 +296,14 @@ sub _load {
         $this->{bbox} = [$xmin,$ymin,$xmax,$ymax];
     }
 
+    if ($this->{type} eq "POSTGRESQL") {
+        # On va récupérer les statistiques sur les attributs, en se limitant à la bbox demandée
+        if (! $this->{database}->analyse($this->{bbox})) {
+            ERROR("Cannot analyse a POSTGRESQL source");
+            return FALSE;
+        }
+    }
+
     return TRUE;
 }
 
