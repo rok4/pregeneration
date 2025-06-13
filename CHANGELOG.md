@@ -1,3 +1,23 @@
+## 5.0.0
+
+### [Changed]
+
+* `be4` : 
+    * on ne précise plus de nodata dans le cas d'application d'un style (ce dernier en contient déjà un)
+    * on compare les sample format avec la nouvelle version
+* `joincache` : 
+    * on utilise les sample formats avec la nouvelle version (qui contient le nombre de bits)
+
+### [Added]
+
+* `4alamo` :
+    * on limite la récupération des statistiques sur les attributs à la zone de calcul
+    * on n'extraie les données que sur l'intersetion de la dalle et de la zone de calcul
+    * on force les gémétries en 2 dimensions
+    * si aucune donnée dans la sous pyramide à calculer, on passe à la suite
+    * on force la multi géométrie si les deux sont présents
+    * on applique une validation sur les géométries lors de l'export
+
 ## 4.2.6
 
 ### [Changed]
