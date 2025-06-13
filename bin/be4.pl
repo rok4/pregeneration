@@ -541,7 +541,7 @@ sub doIt {
 
         if (defined $inputPixel) {
             if (! exists $pyramid->{pixel}->{sampleformat}) {
-                $pyramid->{pixel}->{sampleformat} = $inputPixel->getSampleFormatCode();
+                $pyramid->{pixel}->{sampleformat} = uc($inputPixel->getSampleFormat());
             }
             if (! exists $pyramid->{pixel}->{samplesperpixel}) {
                 $pyramid->{pixel}->{samplesperpixel} = $inputPixel->getSamplesPerPixel();
@@ -560,6 +560,10 @@ sub doIt {
                     push(@{$pyramid->{nodata}}, 0);
                 }
             }
+        }
+
+        if (exists $this{params}->{process}->{style}) {
+            $pyramid->{style} = $this{params}->{process}->{style};
         }  
 
         $this{loaded}->{output_pyramid} = ROK4::Core::PyramidRaster->new("VALUES", $pyramid );
