@@ -347,7 +347,6 @@ sub makeJsons {
 
     my @tmp = $this->getBBox(TRUE);
 
-<<<<<<< feature/optimized-4alamo
     my @datasource_bbox = @{$datasource->getBbox()};
 
     my @slab_src_bbox = ROK4::Core::ProxyGDAL::convertBBox( $this->getGraph()->getCoordTransPyramidDatasource(), $this->getBBox(TRUE));
@@ -368,21 +367,6 @@ sub makeJsons {
     );
 
     my $spat_bbox_string = join(" ", @spat_bbox);
-=======
-    my @bbox = ROK4::Core::ProxyGDAL::convertBBox( $this->getGraph()->getCoordTransPyramidDatasource(), $this->getBBox(TRUE));
-
-    # On va agrandir la bbox de 5% pour être sur de tout avoir
-    my @bbox_extended = @bbox;
-    my $w = ($bbox[2] - $bbox[0])*0.05;
-    my $h = ($bbox[3] - $bbox[1])*0.05;
-    $bbox_extended[0] -= $w;
-    $bbox_extended[2] += $w;
-    $bbox_extended[1] -= $h;
-    $bbox_extended[3] += $h;
-
-    my $bbox_ext_string = join(" ", @bbox_extended);
-    my $bbox_string = join(" ", @bbox);
->>>>>>> develop
 
     for (my $i = 0; $i < scalar @tables; $i += 2) {
         my $sql = $tables[$i];
