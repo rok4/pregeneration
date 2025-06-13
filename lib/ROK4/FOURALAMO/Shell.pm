@@ -132,8 +132,8 @@ my $MAKEJSON = <<'FUNCTION';
 mkdir -p ${TMP_DIR}/jsons/
 MakeJson () {
     local srcsrs=$1
-    local bbox=$2
-    local bbox_ext=$3
+    local spat_bbox=$2
+    local clip_extent=$3
     local dburl=$4
     local sql=$5
     local output=$6
@@ -142,8 +142,18 @@ MakeJson () {
         return
     fi
 
-    OGR_ENABLE_PARTIAL_REPROJECTION=1 ogr2ogr -s_srs $srcsrs -f "GeoJSON" ${OGR2OGR_OPTIONS} -clipsrc $bbox_ext -spat $bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi     
+    OGR_ENABLE_PARTIAL_REPROJECTION=1 ogr2ogr -makevalid -nlt PROMOTE_TO_MULTI -dim 2 -s_srs $srcsrs -f "GeoJSON" ${OGR2OGR_OPTIONS} -clipsrc $clip_extent -spat $spat_bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+
+    # On supprime le fichier s'il ne contient pas de données
+
+    size=$(stat -c "%s" ${TMP_DIR}/jsons/${output}.json)
+    if [[ "$size" -le "1000" ]]; then
+        count=$(jq -r '.features | length' ${TMP_DIR}/jsons/${output}.json)
+        if [[ "${count}" == "0" ]]; then
+            rm ${TMP_DIR}/jsons/${output}.json
+        fi
+    fi
 }
 FUNCTION
 
@@ -166,9 +176,14 @@ MakeTiles () {
 
     rm -r ${TMP_DIR}/pbfs/*
 
+    # Si les sources sont inexistantes, on ne lance pas le tippecanoe
+    ls $sources
+    if [ $? != 0 ] ; then
+        return
+    fi
+
     tippecanoe ${TIPPECANOE_OPTIONS} $generalization_options --base-zoom ${top_level} --full-detail 10 -Z ${top_level} -z ${bottom_level} -e ${TMP_DIR}/pbfs/  $sources
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-
     rm ${TMP_DIR}/jsons/*.json
 }
 FUNCTION
@@ -199,17 +214,19 @@ PushSlab () {
     let colmax=$ulcol+$TILES_PER_WIDTH-1
     let rowmax=$ulrow+$TILES_PER_HEIGHT-1
 
-    for (( c=$ulcol; c<=$colmax; c++ )); do
-        for (( r=$ulrow; r<=$rowmax; r++ )); do
-            if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
-                empty=0
+    if [ ! -z "$( ls -A '${TMP_DIR}/pbfs/' )" ]; then
+        for (( c=$ulcol; c<=$colmax; c++ )); do
+            for (( r=$ulrow; r<=$rowmax; r++ )); do
+                if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
+                    empty=0
+                    break
+                fi
+            done
+            if [[ "${empty}" = "0" ]]; then
                 break
             fi
         done
-        if [[ "${empty}" = "0" ]]; then
-            break
-        fi
-    done
+    fi
 
     if [[ "${empty}" = "0" ]]; then
         pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow s3://${PYR_BUCKET}/${PYR_PREFIX}/$imgName

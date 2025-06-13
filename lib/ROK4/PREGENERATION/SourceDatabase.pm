@@ -312,7 +312,7 @@ sub _init {
 =begin nd
 Function: _load
 
-Analyse tables and attributes connecting to the database
+Check tables and get attributes connecting to the database
 =cut
 sub _load {
     my $this   = shift;
@@ -355,44 +355,92 @@ sub _load {
             $hash->{attributes} = \@all;
         }
 
-        my $analysis = {};
+        my $attributes = {};
+        # On fait une passe pour supprimer les attributs vides et la géométrie, détecter des attributs absents de la table et ajouter les types
         foreach my $a (@{$hash->{attributes}}) {
             if ($a eq "") {next;}
+            if ($a eq $hash->{geometry}->{name}) {next;}
 
             if (! exists $native_atts->{$a}) {
                 ERROR("Attribute $a is not present in table $table");
                 return FALSE;
             }
 
-            if ($a eq $geomname) {next;}
-
-            $analysis->{$a} = {
+            my $attribute = {
                 type => $native_atts->{$a}
             };
 
-            my $count = $database->get_distinct_values_count($hash->{schema}, $hash->{native_name}, $a, $hash->{filter});
+            $attributes->{$a} = {
+                type => $native_atts->{$a}
+            };
+        }
+        $hash->{attributes} = $attributes;
+    }
+
+    $database->disconnect();
+
+    return TRUE;
+}
+
+
+=begin nd
+Function: analyse
+
+Analyse attributes connecting to the database
+=cut
+sub analyse {
+    my $this   = shift;
+    my $bbox   = shift;
+
+    my $database = ROK4::Core::Database->new(
+        $this->{dbname},
+        $this->{host},
+        $this->{port},
+        $this->{username},
+        $this->{password}
+    );
+
+    if (! defined $database) {
+        ERROR( "Cannot connect database to extract attributes and type for tables" );
+        return FALSE;
+    }
+
+    while ( my ($table_name, $table_hash) = each(%{$this->{tables}})) {
+        DEBUG("Récupération d'informations sur les attributs de $table_name");
+
+        my $filter = sprintf(
+            "%s && ST_MakeBox2D(ST_Point(%s, %s),ST_Point(%s ,%s))", 
+            $table_hash->{geometry}->{name}, 
+            $bbox->[0], $bbox->[1], $bbox->[2], $bbox->[3]
+        );
+        if (exists $table_hash->{filter} && $table_hash->{filter} ne "") {
+            $filter = " AND ".$table_hash->{filter};
+        }
+
+        while ( my ($attribute_name, $attribute_hash) = each(%{$table_hash->{attributes}})) {
+            
+            my $count = $database->get_distinct_values_count($table_hash->{schema}, $table_hash->{native_name}, $attribute_name, $filter);
             if (! defined $count) {
-                ERROR("Cannot get count of distinct value of attribute $a in table $table");
+                ERROR("Cannot get count of distinct value of attribute $attribute_name in table $table_name");
                 return FALSE;
             }
 
-            $analysis->{$a}->{count} = $count;
+            $attribute_hash->{count} = $count;
 
             my @numerics = ("integer", "real", "double precision", "numeric");
-            if (defined ROK4::Core::Array::isInArray($native_atts->{$a}, @numerics)) {
-                my ($min, $max) = $database->get_min_max_values($hash->{schema}, $hash->{native_name}, $a, $hash->{filter});
+            if (defined ROK4::Core::Array::isInArray($attribute_hash->{type}, @numerics)) {
+                my ($min, $max) = $database->get_min_max_values($table_hash->{schema}, $table_hash->{native_name}, $attribute_name, $filter);
                 if (defined $min) {
-                    $analysis->{$a}->{min} = $min;
-                    $analysis->{$a}->{max} = $max;
+                    $attribute_hash->{min} = $min;
+                    $attribute_hash->{max} = $max;
                 }
             }
 
             elsif ($count <= 100) {
-                my @distincts = $database->get_distinct_values($hash->{schema}, $hash->{native_name}, $a, $hash->{filter});
-                $analysis->{$a}->{values} = \@distincts;
+                my @distincts = $database->get_distinct_values($table_hash->{schema}, $table_hash->{native_name}, $attribute_name, $filter);
+                $attribute_hash->{values} = \@distincts;
             }
         }
-        $hash->{attributes} = $analysis;
     }
 
     $database->disconnect();
@@ -432,7 +480,7 @@ sub getSqlExports {
 
         my $sql = "";
         if (scalar(keys %{$hash->{attributes}}) != 0) {
-            $sql = sprintf "SELECT \"%s\",\"%s\" FROM $table", 
+            $sql = sprintf "SELECT \"%s\",st_Force2D(\"%s\") FROM $table", 
                 join("\",\"", keys(%{$hash->{attributes}})), 
                 $hash->{geometry}->{name};
         } else {

@@ -350,32 +350,31 @@ sub makeJsons {
         INFO(join(",", @tmp));
     }
 
-    my @bbox = ROK4::Core::ProxyGDAL::convertBBox( $this->getGraph()->getCoordTransPyramidDatasource(), $this->getBBox(TRUE));
+    my @datasource_bbox = @{$datasource->getBbox()};
 
-    if ($this->getLevel() eq "0") {
-        INFO(Dumper(\@bbox));
-    }
-
+    my @slab_src_bbox = ROK4::Core::ProxyGDAL::convertBBox( $this->getGraph()->getCoordTransPyramidDatasource(), $this->getBBox(TRUE));
     # On va agrandir la bbox de 5% pour être sur de tout avoir
-    my @bbox_extended = @bbox;
-    my $w = ($bbox[2] - $bbox[0])*0.05;
-    my $h = ($bbox[3] - $bbox[1])*0.05;
-    $bbox_extended[0] -= $w;
-    $bbox_extended[2] += $w;
-    $bbox_extended[1] -= $h;
-    $bbox_extended[3] += $h;
+    my @slab_src_bbox_extended = @slab_src_bbox;
+    my $w = ($slab_src_bbox[2] - $slab_src_bbox[0])*0.05;
+    my $h = ($slab_src_bbox[3] - $slab_src_bbox[1])*0.05;
+    $slab_src_bbox_extended[0] -= $w;
+    $slab_src_bbox_extended[2] += $w;
+    $slab_src_bbox_extended[1] -= $h;
+    $slab_src_bbox_extended[3] += $h;
 
-    if ($this->getLevel() eq "0") {
-        INFO(Dumper(\@bbox_extended));
-    }
+    my @spat_bbox = (
+        max($slab_src_bbox_extended[0], $datasource_bbox[0]),
+        max($slab_src_bbox_extended[1], $datasource_bbox[1]),
+        min($slab_src_bbox_extended[2], $datasource_bbox[2]),
+        min($slab_src_bbox_extended[3], $datasource_bbox[3])
+    );
 
-    my $bbox_ext_string = join(" ", @bbox_extended);
-    my $bbox_string = join(" ", @bbox);
+    my $spat_bbox_string = join(" ", @spat_bbox);
 
     for (my $i = 0; $i < scalar @tables; $i += 2) {
         my $sql = $tables[$i];
         my $dstTableName = $tables[$i+1];
-        $this->{script}->write(sprintf "MakeJson \"$srcSrs\" \"$bbox_string\" \"$bbox_ext_string\" \"$dburl\" '$sql' $dstTableName\n");
+        $this->{script}->write(sprintf "MakeJson \"$srcSrs\" \"$spat_bbox_string\" \"$spat_bbox_string\" \"$dburl\" '$sql' $dstTableName\n");
     }
 
     return TRUE;
