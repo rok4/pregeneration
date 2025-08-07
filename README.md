@@ -69,6 +69,7 @@ Leur définition est contrôlée à l'usage.
     - `HTTP_PROXY`
     - `HTTPS_PROXY`
     - `NO_PROXY`
+* Pour le moissonage WMS, le timeout du wget est paramétrable via `WMS2WORK_WGET_TIMEOUT`. Sa valeur doit respecter le format autorisé par la commande Unix `timeout`. (Valeur par défaut: `60s`)
 
 ## Présentation des outils
 
