@@ -227,6 +227,9 @@ sub prepare {
     $code .= "# Création du dossier temporaire\n";
     $code .= "mkdir -p \${TMP_DIR}\n\n";
 
+    $code .= "# Timeout du wget de la fonction Wms2work\n";
+    $code .= sprintf ("WMS2WORK_WGET_TIMEOUT=\"%s\"\n", $ENV{WMS2WORK_WGET_TIMEOUT} || '60s');
+
     if (defined $initialisation) {
         $code .= $initialisation;
     }

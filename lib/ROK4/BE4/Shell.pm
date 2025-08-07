@@ -599,7 +599,7 @@ Wms2work () {
         while :
         do
             let count=count+1
-            wget --no-verbose -O $nameImg "$url&BBOX=$1"
+            timeout ${WMS2WORK_WGET_TIMEOUT} wget --no-verbose -O $nameImg "$url&BBOX=$1"
 
             if [ $? == 0 ] ; then
                 checkWork $nameImg 2>/dev/null
