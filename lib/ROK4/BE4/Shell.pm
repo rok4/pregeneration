@@ -599,7 +599,7 @@ Wms2work () {
         while :
         do
             let count=count+1
-            wget --no-verbose -O $nameImg "$url&BBOX=$1"
+            wget --quiet --no-verbose -O $nameImg "$url&BBOX=$1"
 
             if [ $? == 0 ] ; then
                 checkWork $nameImg 2>/dev/null
@@ -608,6 +608,7 @@ Wms2work () {
                 fi
             fi
             
+            echo "Cannot download $url&BBOX=$1"
             echo "Failure $count : wait for $wait_delay s"
             sleep $wait_delay
             let wait_delay=wait_delay*2

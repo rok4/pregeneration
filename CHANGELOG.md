@@ -1,3 +1,9 @@
+## 5.0.1
+
+### [Changed]
+
+* `be4` : WMS harvest scripts only log request when error occure
+
 ## 5.0.0
 
 ### [Changed]
