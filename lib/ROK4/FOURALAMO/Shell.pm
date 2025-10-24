@@ -214,7 +214,7 @@ PushSlab () {
     let colmax=$ulcol+$TILES_PER_WIDTH-1
     let rowmax=$ulrow+$TILES_PER_HEIGHT-1
 
-    if [ ! -z "$( ls -A '${TMP_DIR}/pbfs/' )" ]; then
+    if [ ! -z "$( ls -A ${TMP_DIR}/pbfs/ )" ]; then
         for (( c=$ulcol; c<=$colmax; c++ )); do
             for (( r=$ulrow; r<=$rowmax; r++ )); do
                 if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
@@ -260,17 +260,19 @@ PushSlab () {
     let colmax=$ulcol+$TILES_PER_WIDTH-1
     let rowmax=$ulrow+$TILES_PER_HEIGHT-1
 
-    for (( c=$ulcol; c<=$colmax; c++ )); do
-        for (( r=$ulrow; r<=$rowmax; r++ )); do
-            if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
-                empty=0
+    if [ ! -z "$( ls -A ${TMP_DIR}/pbfs/ )" ]; then
+        for (( c=$ulcol; c<=$colmax; c++ )); do
+            for (( r=$ulrow; r<=$rowmax; r++ )); do
+                if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
+                    empty=0
+                    break
+                fi
+            done
+            if [[ "${empty}" = "0" ]]; then
                 break
             fi
         done
-        if [[ "${empty}" = "0" ]]; then
-            break
-        fi
-    done
+    fi
 
     if [[ "${empty}" = "0" ]]; then
         pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow swift://${PYR_CONTAINER}/${PYR_PREFIX}/$imgName
@@ -305,17 +307,19 @@ PushSlab () {
     let colmax=$ulcol+$TILES_PER_WIDTH-1
     let rowmax=$ulrow+$TILES_PER_HEIGHT-1
 
-    for (( c=$ulcol; c<=$colmax; c++ )); do
-        for (( r=$ulrow; r<=$rowmax; r++ )); do
-            if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
-                empty=0
+    if [ ! -z "$( ls -A ${TMP_DIR}/pbfs/ )" ]; then
+        for (( c=$ulcol; c<=$colmax; c++ )); do
+            for (( r=$ulrow; r<=$rowmax; r++ )); do
+                if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
+                    empty=0
+                    break
+                fi
+            done
+            if [[ "${empty}" = "0" ]]; then
                 break
             fi
         done
-        if [[ "${empty}" = "0" ]]; then
-            break
-        fi
-    done
+    fi
 
     if [[ "${empty}" = "0" ]]; then
         pbf2cache -t ${TILES_PER_WIDTH} ${TILES_PER_HEIGHT} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow ceph://${PYR_POOL}/${PYR_PREFIX}/$imgName
@@ -351,17 +355,19 @@ PushSlab () {
     let colmax=$ulcol+$TILES_PER_WIDTH-1
     let rowmax=$ulrow+$TILES_PER_HEIGHT-1
 
-    for (( c=$ulcol; c<=$colmax; c++ )); do
-        for (( r=$ulrow; r<=$rowmax; r++ )); do
-            if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
-                empty=0
+    if [ ! -z "$( ls -A ${TMP_DIR}/pbfs/ )" ]; then
+        for (( c=$ulcol; c<=$colmax; c++ )); do
+            for (( r=$ulrow; r<=$rowmax; r++ )); do
+                if [[ -e ${TMP_DIR}/pbfs/${level}/$c/$r.pbf ]]; then
+                    empty=0
+                    break
+                fi
+            done
+            if [[ "${empty}" = "0" ]]; then
                 break
             fi
         done
-        if [[ "${empty}" = "0" ]]; then
-            break
-        fi
-    done
+    fi
 
     if [[ "${empty}" = "0" ]]; then
         local dir=`dirname ${PYR_DIR}/$imgName`

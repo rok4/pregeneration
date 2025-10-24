@@ -1,3 +1,9 @@
+## 5.0.2
+
+### [Fixed]
+
+* `4alamo` : Optimisation de la détection de tuiles à mettre sous forme de dalle (généralisation à tous les stockage et correction pour le S3)
+
 ## 5.0.1
 
 ### [Changed]
